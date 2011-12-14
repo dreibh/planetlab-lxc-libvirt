@@ -44,7 +44,7 @@ trees: sources
         rpmbuild $(RPMDIRDEFS) $(RPMDEFS) --nodeps -bp --target $(PREPARCH) $(SPECFILE)
 
 srpm: sources
-        rpmbuild $(RPMDIRDEFS) $(RPMDEFS) --nodeps -bs $(SPECFILE)
+        rpmbuild $(RPMDIRDEFS) $(RPMDEFS) --nodeps $(BUILDOPTS) -bs $(SPECFILE)
 
 TARGET ?= $(shell uname -m)
 rpm: sources
