@@ -872,7 +872,7 @@ do
   printf "#!/bin/sh\nexit 0\n" > $i
   chmod +x $i
 done
-make check
+#make check
 
 %pre
 %if 0%{?fedora} >= 12 || 0%{?rhel} >= 6
