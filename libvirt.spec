@@ -1176,19 +1176,19 @@ rm -f $RPM_BUILD_ROOT%{_sysconfdir}/sysctl.d/libvirtd
 %doc docs/*.xml
 %endif
 
-%if %{with_sanlock}
-%files lock-sanlock
-%defattr(-, root, root)
-%if %{with_qemu}
-%config(noreplace) %{_sysconfdir}/libvirt/qemu-sanlock.conf
-%endif
-%attr(0755, root, root) %{_libdir}/libvirt/lock-driver/sanlock.so
-%{_datadir}/augeas/lenses/libvirt_sanlock.aug
-%{_datadir}/augeas/lenses/tests/test_libvirt_sanlock.aug
-%dir %attr(0700, root, root) %{_localstatedir}/lib/libvirt/sanlock
-%{_sbindir}/virt-sanlock-cleanup
-%{_mandir}/man8/virt-sanlock-cleanup.8*
-%endif
+#%if %{with_sanlock}
+#%files lock-sanlock
+#%defattr(-, root, root)
+#%if %{with_qemu}
+#%config(noreplace) %{_sysconfdir}/libvirt/qemu-sanlock.conf
+#%endif
+#%attr(0755, root, root) %{_libdir}/libvirt/lock-driver/sanlock.so
+#%{_datadir}/augeas/lenses/libvirt_sanlock.aug
+#%{_datadir}/augeas/lenses/tests/test_libvirt_sanlock.aug
+#%dir %attr(0700, root, root) %{_localstatedir}/lib/libvirt/sanlock
+#%{_sbindir}/virt-sanlock-cleanup
+#%{_mandir}/man8/virt-sanlock-cleanup.8*
+#%endif
 
 %files client -f %{name}.lang
 %defattr(-, root, root)
