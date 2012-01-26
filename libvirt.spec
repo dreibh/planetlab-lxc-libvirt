@@ -554,19 +554,19 @@ Requires: xen-devel
 Includes and documentations for the C library providing an API to use
 the virtualization capabilities of recent versions of Linux (and other OSes).
 
-%if %{with_sanlock}
-%package lock-sanlock
-Summary: Sanlock lock manager plugin for QEMU driver
-Group: Development/Libraries
-Requires: sanlock >= 1.8
-#for virt-sanlock-cleanup require augeas
-Requires: augeas
-Requires: %{name} = %{version}-%{release}
+#%if %{with_sanlock}
+#%package lock-sanlock
+#Summary: Sanlock lock manager plugin for QEMU driver
+#Group: Development/Libraries
+#Requires: sanlock >= 1.8
+##for virt-sanlock-cleanup require augeas
+#Requires: augeas
+#Requires: %{name} = %{version}-%{release}
 
-%description lock-sanlock
-Includes the Sanlock lock manager plugin for the QEMU
-driver
-%endif
+#%description lock-sanlock
+#Includes the Sanlock lock manager plugin for the QEMU
+#driver
+#%endif
 
 %if %{with_python}
 %package python
