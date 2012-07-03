@@ -621,18 +621,18 @@ capabilities of the QEMU TCG emulators
 %endif
 
 
-%if %{with_qemu_kvm}
-%package daemon-kvm
-Summary: Server side daemon & driver required to run KVM guests
-Group: Development/Libraries
+#%if %{with_qemu_kvm}
+#%package daemon-kvm
+#Summary: Server side daemon & driver required to run KVM guests
+#Group: Development/Libraries
 
-Requires: libvirt-daemon = %{version}-%{release}
-Requires: qemu-kvm
+#Requires: libvirt-daemon = %{version}-%{release}
+#Requires: qemu-kvm
 
-%description daemon-kvm
-Server side daemon and driver required to manage the virtualization
-capabilities of the KVM hypervisor
-%endif
+#%description daemon-kvm
+#Server side daemon and driver required to manage the virtualization
+#capabilities of the KVM hypervisor
+#%endif
 
 
 %if %{with_lxc}
@@ -648,32 +648,32 @@ capabilities of LXC
 %endif
 
 
-%if %{with_uml}
-%package daemon-uml
-Summary: Server side daemon & driver required to run UML guests
-Group: Development/Libraries
+#%if %{with_uml}
+#%package daemon-uml
+#Summary: Server side daemon & driver required to run UML guests
+#Group: Development/Libraries
 
-Requires: libvirt-daemon = %{version}-%{release}
-# There are no UML kernel RPMs in Fedora/RHEL to depend on.
+#Requires: libvirt-daemon = %{version}-%{release}
+## There are no UML kernel RPMs in Fedora/RHEL to depend on.
 
-%description daemon-uml
-Server side daemon and driver required to manage the virtualization
-capabilities of UML
-%endif
+#%description daemon-uml
+#Server side daemon and driver required to manage the virtualization
+#capabilities of UML
+#%endif
 
 
-%if %{with_xen} || %{with_libxl}
-%package daemon-xen
-Summary: Server side daemon & driver required to run XEN guests
-Group: Development/Libraries
+#%if %{with_xen} || %{with_libxl}
+#%package daemon-xen
+#Summary: Server side daemon & driver required to run XEN guests
+#Group: Development/Libraries
 
-Requires: libvirt-daemon = %{version}-%{release}
-Requires: xen
+#Requires: libvirt-daemon = %{version}-%{release}
+#Requires: xen
 
-%description daemon-xen
-Server side daemon and driver required to manage the virtualization
-capabilities of XEN
-%endif
+#%description daemon-xen
+#Server side daemon and driver required to manage the virtualization
+#capabilities of XEN
+#%endif
 %endif
 
 %package client
@@ -711,19 +711,19 @@ Requires: pkgconfig
 %description devel
 Include header files & development libraries for the libvirt C library.
 
-%if %{with_sanlock}
-%package lock-sanlock
-Summary: Sanlock lock manager plugin for QEMU driver
-Group: Development/Libraries
-Requires: sanlock >= 1.8
-#for virt-sanlock-cleanup require augeas
-Requires: augeas
-Requires: %{name} = %{version}-%{release}
+#%if %{with_sanlock}
+#%package lock-sanlock
+#Summary: Sanlock lock manager plugin for QEMU driver
+#Group: Development/Libraries
+#Requires: sanlock >= 1.8
+##for virt-sanlock-cleanup require augeas
+#Requires: augeas
+#Requires: %{name} = %{version}-%{release}
 
-%description lock-sanlock
-Includes the Sanlock lock manager plugin for the QEMU
-driver
-%endif
+#%description lock-sanlock
+#Includes the Sanlock lock manager plugin for the QEMU
+#driver
+#%endif
 
 %if %{with_python}
 %package python
