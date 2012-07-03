@@ -935,7 +935,6 @@ autoreconf -if
            %{?_without_numad} \
            %{?_without_capng} \
            %{?_without_netcf} \
-           %{?_without_selinux} \
            %{?_without_hal} \
            %{?_without_udev} \
            %{?_without_yajl} \
@@ -948,6 +947,7 @@ autoreconf -if
            %{with_packager_version} \
            --with-qemu-user=%{qemu_user} \
            --with-qemu-group=%{qemu_group} \
+           --without-selinux \
            --with-capng \
            --with-udev \
            %{init_scripts}
