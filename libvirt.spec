@@ -607,18 +607,18 @@ Network filter configuration files for cleaning guest traffic
 # create daemon-drv-XXX sub-RPMs and add them as deps
 # to all of the following  daemon-XXX RPMs
 
-%if %{with_qemu_tcg}
-%package daemon-qemu
-Summary: Server side daemon & driver required to run QEMU guests
-Group: Development/Libraries
+#%if %{with_qemu_tcg}
+#%package daemon-qemu
+#Summary: Server side daemon & driver required to run QEMU guests
+#Group: Development/Libraries
 
-Requires: libvirt-daemon = %{version}-%{release}
-Requires: qemu
+#Requires: libvirt-daemon = %{version}-%{release}
+#Requires: qemu
 
-%description daemon-qemu
-Server side daemon and driver required to manage the virtualization
-capabilities of the QEMU TCG emulators
-%endif
+#%description daemon-qemu
+#Server side daemon and driver required to manage the virtualization
+#capabilities of the QEMU TCG emulators
+#%endif
 
 
 #%if %{with_qemu_kvm}
@@ -1338,10 +1338,10 @@ rm -f $RPM_BUILD_ROOT%{_sysconfdir}/sysctl.d/libvirtd
 %{_sysconfdir}/libvirt/nwfilter/*.xml
 %endif
 
-%if %{with_qemu_tcg}
-%files daemon-qemu
-%defattr(-, root, root)
-%endif
+#%if %{with_qemu_tcg}
+#%files daemon-qemu
+#%defattr(-, root, root)
+#%endif
 
 #%if %{with_qemu_kvm}
 #%files daemon-kvm
