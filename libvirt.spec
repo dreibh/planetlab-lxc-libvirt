@@ -1343,25 +1343,25 @@ rm -f $RPM_BUILD_ROOT%{_sysconfdir}/sysctl.d/libvirtd
 %defattr(-, root, root)
 %endif
 
-%if %{with_qemu_kvm}
-%files daemon-kvm
-%defattr(-, root, root)
-%endif
+#%if %{with_qemu_kvm}
+#%files daemon-kvm
+#%defattr(-, root, root)
+#%endif
 
 %if %{with_lxc}
 %files daemon-lxc
 %defattr(-, root, root)
 %endif
 
-%if %{with_uml}
-%files daemon-uml
-%defattr(-, root, root)
-%endif
+#%if %{with_uml}
+#%files daemon-uml
+#%defattr(-, root, root)
+#%endif
 
-%if %{with_xen} || %{with_libxl}
-%files daemon-xen
-%defattr(-, root, root)
-%endif
+#%if %{with_xen} || %{with_libxl}
+#%files daemon-xen
+#%defattr(-, root, root)
+#%endif
 %endif
 
 #%if %{with_sanlock}
