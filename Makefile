@@ -2,8 +2,8 @@ WEBFETCH                := wget
 SHA1SUM                 := sha1sum
 
 ALL                     += libvirt
-libvirt-URL            := ftp://libvirt.org/libvirt/libvirt-0.9.9.tar.gz
-libvirt-SHA1SUM        := d716303b4b00c2d8cc0ebd7e1a853e238d9723f8
+libvirt-URL            := ftp://libvirt.org/libvirt/libvirt-0.9.12.tar.gz
+libvirt-SHA1SUM        := 3743dc4f3e58d5912a98f568c3e854d97d81f216
 libvirt                := $(notdir $(libvirt-URL))
 
 all: $(ALL)
@@ -38,12 +38,12 @@ SPECFILE = libvirt.spec
 PWD=$(shell pwd)
 PREPARCH ?= noarch
 RPMDIRDEFS = --define "_sourcedir $(PWD)" --define "_builddir $(PWD)" --define "_srcrpmdir $(PWD)" --define "_rpmdir $(PWD)"
-BUILDOPTS = --without storage-disk --without storage-iscsi --without storage-scsi \
-	        --without storage-fs --without storage-lvm \
-	        --without polkit --without sasl --without audit --with capng --with udev \
-	        --without netcf --without avahi \
-	        --without xen --without qemu --without hyperv --without phyp --without esx \
-            --define 'packager PlanetLab'
+BUILDOPTS = --without xen --without qemu --without hyperv --without phyp --without esx \
+			--without netcf --without avahi --without polkit --without sasl --without audit \
+			--without storage-iscsi --without storage-scsi --without storage-disk \
+			--without storage-rbd --without selinux --without dtrace --without sanlock \
+			--without libxl --with capng --with udev --with interface \
+			--define 'packager PlanetLab'
 
 trees: sources
 	rpmbuild $(RPMDIRDEFS) $(RPMDEFS) --nodeps -bp --target $(PREPARCH) $(SPECFILE)
