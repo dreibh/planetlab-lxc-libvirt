@@ -2,8 +2,8 @@ WEBFETCH                := wget
 SHA1SUM                 := sha1sum
 
 ALL                     += libvirt
-libvirt-URL            := ftp://libvirt.org/libvirt/libvirt-0.9.12.tar.gz
-libvirt-SHA1SUM        := 3743dc4f3e58d5912a98f568c3e854d97d81f216
+libvirt-URL            := ftp://libvirt.org/libvirt/libvirt-0.10.1.tar.gz
+libvirt-SHA1SUM        := d079d549fa3852dcc7aab05577deaf6c4777ca7d
 libvirt                := $(notdir $(libvirt-URL))
 
 all: $(ALL)
