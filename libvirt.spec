@@ -34,6 +34,8 @@
 %define server_drivers     1
 %endif
 
+# Always build with dlopen'd modules
+%define with_driver_modules 1
 
 # Now set the defaults for all the important features, independent
 # of any particular OS
@@ -65,16 +67,27 @@
 %define with_esx           0%{!?_without_esx:1}
 %define with_hyperv        0%{!?_without_hyperv:1}
 %define with_xenapi        0%{!?_without_xenapi:1}
+%define with_parallels     0%{!?_without_parallels:1}
 
 # Then the secondary host drivers, which run inside libvirtd
-%define with_network       0%{!?_without_network:%{server_drivers}}
-%define with_storage_fs    0%{!?_without_storage_fs:%{server_drivers}}
-%define with_storage_lvm   0%{!?_without_storage_lvm:%{server_drivers}}
-%define with_storage_iscsi 0%{!?_without_storage_iscsi:%{server_drivers}}
-%define with_storage_disk  0%{!?_without_storage_disk:%{server_drivers}}
-%define with_storage_mpath 0%{!?_without_storage_mpath:%{server_drivers}}
-%define with_numactl       0%{!?_without_numactl:%{server_drivers}}
-%define with_selinux       0%{!?_without_selinux:%{server_drivers}}
+%define with_network          0%{!?_without_network:%{server_drivers}}
+%define with_storage_fs       0%{!?_without_storage_fs:%{server_drivers}}
+%define with_storage_lvm      0%{!?_without_storage_lvm:%{server_drivers}}
+%define with_storage_iscsi    0%{!?_without_storage_iscsi:%{server_drivers}}
+%define with_storage_disk     0%{!?_without_storage_disk:%{server_drivers}}
+%define with_storage_mpath    0%{!?_without_storage_mpath:%{server_drivers}}
+%if 0%{?fedora} >= 16
+%define with_storage_rbd      0%{!?_without_storage_rbd:%{server_drivers}}
+%else
+%define with_storage_rbd      0
+%endif
+%if 0%{?fedora} >= 17
+%define with_storage_sheepdog 0%{!?_without_storage_sheepdog:%{server_drivers}}
+%else
+%define with_storage_sheepdog 0
+%endif
+%define with_numactl          0%{!?_without_numactl:%{server_drivers}}
+%define with_selinux          0%{!?_without_selinux:%{server_drivers}}
 
 # A few optional bits off by default, we enable later
 %define with_polkit        0%{!?_without_polkit:0}
@@ -93,6 +106,7 @@
 %define with_sanlock       0%{!?_without_sanlock:0}
 %define with_systemd       0%{!?_without_systemd:0}
 %define with_numad         0%{!?_without_numad:0}
+%define with_firewalld     0%{!?_without_firewalld:0}
 
 # Non-server/HV driver defaults which are always enabled
 %define with_python        0%{!?_without_python:1}
@@ -124,11 +138,18 @@
 %define with_xenapi 0
 %define with_libxl 0
 %define with_hyperv 0
+%define with_parallels 0
 %endif
 
-# Although earlier Fedora has systemd, libvirt still used sysvinit
-%if 0%{?fedora} >= 17
+# Fedora 17 / RHEL-7 are first where we use systemd. Although earlier
+# Fedora has systemd, libvirt still used sysvinit there.
+%if 0%{?fedora} >= 17 || 0%{?rhel} >= 7
 %define with_systemd 1
+%endif
+
+# Fedora 18 / RHEL-7 are first where firewalld support is enabled
+%if 0%{?fedora} >= 17 || 0%{?rhel} >= 7
+%define with_firewalld 1
 %endif
 
 # RHEL-5 has restricted QEMU to x86_64 only and is too old for LXC
@@ -215,6 +236,8 @@
 %define with_storage_lvm 0
 %define with_storage_iscsi 0
 %define with_storage_mpath 0
+%define with_storage_rbd 0
+%define with_storage_sheepdog 0
 %define with_storage_disk 0
 %endif
 
@@ -251,6 +274,25 @@
 %define with_cgconfig 0%{!?_without_cgconfig:1}
 %endif
 %endif
+
+%if %{with_udev} || %{with_hal}
+%define with_nodedev 1
+%else
+%define with_nodedev 0
+%endif
+
+%if %{with_netcf}
+%define with_interface 1
+%else
+%define with_interface 0
+%endif
+
+%if %{with_storage_fs} || %{with_storage_mpath} || %{with_storage_iscsi} || %{with_storage_lvm} || %{with_storage_disk}
+%define with_storage 1
+%else
+%define with_storage 0
+%endif
+
 
 # Force QEMU to run as non-root
 %if 0%{?fedora} >= 12 || 0%{?rhel} >= 6
@@ -292,8 +334,30 @@ Requires: libvirt-daemon-config-network = %{version}-%{release}
 %if %{with_nwfilter}
 Requires: libvirt-daemon-config-nwfilter = %{version}-%{release}
 %endif
-# XXX when we turn on driver modules, we need to add
-# deps on each driver (Requires: libvirt-daemon-drv-qemu)
+%if %{with_driver_modules}
+%if %{with_libxl}
+Requires: libvirt-daemon-driver-libxl = %{version}-%{release}
+%endif
+%if %{with_lxc}
+Requires: libvirt-daemon-driver-lxc = %{version}-%{release}
+%endif
+%if %{with_qemu}
+Requires: libvirt-daemon-driver-qemu = %{version}-%{release}
+%endif
+%if %{with_uml}
+Requires: libvirt-daemon-driver-uml = %{version}-%{release}
+%endif
+%if %{with_xen}
+Requires: libvirt-daemon-driver-xen = %{version}-%{release}
+%endif
+
+Requires: libvirt-daemon-driver-interface = %{version}-%{release}
+Requires: libvirt-daemon-driver-secret = %{version}-%{release}
+Requires: libvirt-daemon-driver-storage = %{version}-%{release}
+Requires: libvirt-daemon-driver-network = %{version}-%{release}
+Requires: libvirt-daemon-driver-nodedev = %{version}-%{release}
+Requires: libvirt-daemon-driver-nwfilter = %{version}-%{release}
+%endif
 %endif
 Requires: libvirt-client = %{version}-%{release}
 
@@ -328,7 +392,11 @@ BuildRequires: augeas
 BuildRequires: hal-devel
 %endif
 %if %{with_udev}
+%if 0%{?fedora} >= 18 || 0%{?rhel} >= 7
+BuildRequires: systemd-devel >= 185
+%else
 BuildRequires: libudev-devel >= 145
+%endif
 BuildRequires: libpciaccess-devel >= 0.10.9
 %endif
 %if %{with_yajl}
@@ -341,7 +409,11 @@ BuildRequires: sanlock-devel >= 1.8
 BuildRequires: libpcap-devel
 %endif
 %if %{with_libnl}
+%if 0%{?fedora} >= 18 || 0%{?rhel} >= 7
+BuildRequires: libnl3-devel
+%else
 BuildRequires: libnl-devel
+%endif
 %endif
 %if %{with_avahi}
 BuildRequires: avahi-devel
@@ -407,6 +479,9 @@ BuildRequires: device-mapper
 %else
 BuildRequires: device-mapper-devel
 %endif
+%if %{with_storage_rbd}
+BuildRequires: ceph-devel
+%endif
 %endif
 %if %{with_numactl}
 # For QEMU/LXC numa info
@@ -418,11 +493,16 @@ BuildRequires: libcap-ng-devel >= 0.5.0
 %if %{with_phyp}
 BuildRequires: libssh2-devel
 %endif
+
 %if %{with_netcf}
+%if 0%{?fedora} >= 18 || 0%{?rhel} >= 7
+BuildRequires: netcf-devel >= 0.2.2
+%else
 %if 0%{?fedora} >= 16 || 0%{?rhel} >= 6
 BuildRequires: netcf-devel >= 0.1.8
 %else
 BuildRequires: netcf-devel >= 0.1.4
+%endif
 %endif
 %endif
 %if %{with_esx}
@@ -450,6 +530,11 @@ BuildRequires: util-linux
 BuildRequires: nfs-utils
 %endif
 
+%if %{with_firewalld}
+# Communication with the firewall daemon uses DBus
+BuildRequires: dbus-devel
+%endif
+
 # Fedora build root suckage
 BuildRequires: gawk
 
@@ -459,6 +544,8 @@ BuildRequires: scrub
 %if %{with_numad}
 BuildRequires: numad
 %endif
+
+Provides: bundled(gnulib)
 
 %description
 Libvirt is a C toolkit to interact with the virtualization capabilities
@@ -507,7 +594,11 @@ Requires: ebtables
 Requires: hal
 %endif
 %if %{with_udev}
+%if 0%{?fedora} >= 18 || 0%{?rhel} >= 7
+Requires: systemd >= 185
+%else
 Requires: udev >= 145
+%endif
 %endif
 %if %{with_polkit}
 %if 0%{?fedora} >= 12 || 0%{?rhel} >=6
@@ -558,6 +649,14 @@ Requires: device-mapper
 # For multipath support
 Requires: device-mapper
 %endif
+%if %{with_storage_rbd}
+# For RBD support
+Requires: ceph
+%endif
+%if %{with_storage_sheepdog}
+# For Sheepdog support
+Requires: sheepdog
+%endif
 %if %{with_cgconfig}
 Requires: libcgroup
 %endif
@@ -603,36 +702,201 @@ Requires: libvirt-daemon = %{version}-%{release}
 Network filter configuration files for cleaning guest traffic
 %endif
 
-# XXX when we turn on driver modules, we will need to
-# create daemon-drv-XXX sub-RPMs and add them as deps
-# to all of the following  daemon-XXX RPMs
+%if %{with_driver_modules}
+%if %{with_network}
+%package daemon-driver-network
+Summary: Network driver plugin for the libvirtd daemon
+Group: Development/Libraries
+Requires: libvirt-daemon = %{version}-%{release}
 
-#%if %{with_qemu_tcg}
-#%package daemon-qemu
-#Summary: Server side daemon & driver required to run QEMU guests
-#Group: Development/Libraries
-
-#Requires: libvirt-daemon = %{version}-%{release}
-#Requires: qemu
-
-#%description daemon-qemu
-#Server side daemon and driver required to manage the virtualization
-#capabilities of the QEMU TCG emulators
-#%endif
+%description daemon-driver-network
+The network driver plugin for the libvirtd daemon, providing
+an implementation of the virtual network APIs using the Linux
+bridge capabilities.
+%endif
 
 
-#%if %{with_qemu_kvm}
-#%package daemon-kvm
-#Summary: Server side daemon & driver required to run KVM guests
-#Group: Development/Libraries
+%if %{with_nwfilter}
+%package daemon-driver-nwfilter
+Summary: Nwfilter driver plugin for the libvirtd daemon
+Group: Development/Libraries
+Requires: libvirt-daemon = %{version}-%{release}
 
-#Requires: libvirt-daemon = %{version}-%{release}
-#Requires: qemu-kvm
+%description daemon-driver-nwfilter
+The nwfilter driver plugin for the libvirtd daemon, providing
+an implementation of the firewall APIs using the ebtables,
+iptables and ip6tables capabilities
+%endif
 
-#%description daemon-kvm
-#Server side daemon and driver required to manage the virtualization
-#capabilities of the KVM hypervisor
-#%endif
+
+%if %{with_nodedev}
+%package daemon-driver-nodedev
+Summary: Nodedev driver plugin for the libvirtd daemon
+Group: Development/Libraries
+Requires: libvirt-daemon = %{version}-%{release}
+
+%description daemon-driver-nodedev
+The nodedev driver plugin for the libvirtd daemon, providing
+an implementation of the node device APIs using the udev
+capabilities.
+%endif
+
+
+%if %{with_interface}
+%package daemon-driver-interface
+Summary: Interface driver plugin for the libvirtd daemon
+Group: Development/Libraries
+Requires: libvirt-daemon = %{version}-%{release}
+
+%description daemon-driver-interface
+The interface driver plugin for the libvirtd daemon, providing
+an implementation of the network interface APIs using the
+netcf library
+%endif
+
+
+%package daemon-driver-secret
+Summary: Secret driver plugin for the libvirtd daemon
+Group: Development/Libraries
+Requires: libvirt-daemon = %{version}-%{release}
+
+%description daemon-driver-secret
+The secret driver plugin for the libvirtd daemon, providing
+an implementation of the secret key APIs.
+
+
+%if %{with_storage}
+%package daemon-driver-storage
+Summary: Storage driver plugin for the libvirtd daemon
+Group: Development/Libraries
+Requires: libvirt-daemon = %{version}-%{release}
+
+%description daemon-driver-storage
+The storage driver plugin for the libvirtd daemon, providing
+an implementation of the storage APIs using LVM, iSCSI,
+parted and more.
+%endif
+
+
+%if %{with_qemu}
+%package daemon-driver-qemu
+Summary: Qemu driver plugin for the libvirtd daemon
+Group: Development/Libraries
+Requires: libvirt-daemon = %{version}-%{release}
+# There really is a hard cross-driver dependency here
+%if %{with_driver_modules}
+Requires: libvirt-daemon-driver-network = %{version}-%{release}
+%endif
+
+%description daemon-driver-qemu
+The qemu driver plugin for the libvirtd daemon, providing
+an implementation of the hypervisor driver APIs using
+QEMU
+%endif
+
+
+%if %{with_lxc}
+%package daemon-driver-lxc
+Summary: LXC driver plugin for the libvirtd daemon
+Group: Development/Libraries
+Requires: libvirt-daemon = %{version}-%{release}
+# There really is a hard cross-driver dependency here
+%if %{with_driver_modules}
+Requires: libvirt-daemon-driver-network = %{version}-%{release}
+%endif
+
+%description daemon-driver-lxc
+The LXC driver plugin for the libvirtd daemon, providing
+an implementation of the hypervisor driver APIs using
+the Linux kernel
+%endif
+
+
+%if %{with_uml}
+%package daemon-driver-uml
+Summary: Uml driver plugin for the libvirtd daemon
+Group: Development/Libraries
+Requires: libvirt-daemon = %{version}-%{release}
+
+%description daemon-driver-uml
+The UML driver plugin for the libvirtd daemon, providing
+an implementation of the hypervisor driver APIs using
+User Mode Linux
+%endif
+
+
+%if %{with_xen}
+%package daemon-driver-xen
+Summary: Xen driver plugin for the libvirtd daemon
+Group: Development/Libraries
+Requires: libvirt-daemon = %{version}-%{release}
+
+%description daemon-driver-xen
+The Xen driver plugin for the libvirtd daemon, providing
+an implementation of the hypervisor driver APIs using
+Xen
+%endif
+
+
+%if %{with_libxl}
+%package daemon-driver-libxl
+Summary: Libxl driver plugin for the libvirtd daemon
+Group: Development/Libraries
+Requires: libvirt-daemon = %{version}-%{release}
+
+%description daemon-driver-libxl
+The Libxl driver plugin for the libvirtd daemon, providing
+an implementation of the hypervisor driver APIs using
+Libxl
+%endif
+%endif
+
+
+
+%if %{with_qemu_tcg}
+%package daemon-qemu
+Summary: Server side daemon & driver required to run QEMU guests
+Group: Development/Libraries
+
+Requires: libvirt-daemon = %{version}-%{release}
+%if %{with_driver_modules}
+Requires: libvirt-daemon-driver-qemu = %{version}-%{release}
+Requires: libvirt-daemon-driver-interface = %{version}-%{release}
+Requires: libvirt-daemon-driver-network = %{version}-%{release}
+Requires: libvirt-daemon-driver-nodedev = %{version}-%{release}
+Requires: libvirt-daemon-driver-nwfilter = %{version}-%{release}
+Requires: libvirt-daemon-driver-secret = %{version}-%{release}
+Requires: libvirt-daemon-driver-storage = %{version}-%{release}
+%endif
+Requires: qemu
+
+%description daemon-qemu
+Server side daemon and driver required to manage the virtualization
+capabilities of the QEMU TCG emulators
+%endif
+
+
+%if %{with_qemu_kvm}
+%package daemon-kvm
+Summary: Server side daemon & driver required to run KVM guests
+Group: Development/Libraries
+
+Requires: libvirt-daemon = %{version}-%{release}
+%if %{with_driver_modules}
+Requires: libvirt-daemon-driver-qemu = %{version}-%{release}
+Requires: libvirt-daemon-driver-interface = %{version}-%{release}
+Requires: libvirt-daemon-driver-network = %{version}-%{release}
+Requires: libvirt-daemon-driver-nodedev = %{version}-%{release}
+Requires: libvirt-daemon-driver-nwfilter = %{version}-%{release}
+Requires: libvirt-daemon-driver-secret = %{version}-%{release}
+Requires: libvirt-daemon-driver-storage = %{version}-%{release}
+%endif
+Requires: qemu-kvm
+
+%description daemon-kvm
+Server side daemon and driver required to manage the virtualization
+capabilities of the KVM hypervisor
+%endif
 
 
 %if %{with_lxc}
@@ -641,6 +905,15 @@ Summary: Server side daemon & driver required to run LXC guests
 Group: Development/Libraries
 
 Requires: libvirt-daemon = %{version}-%{release}
+%if %{with_driver_modules}
+Requires: libvirt-daemon-driver-lxc = %{version}-%{release}
+Requires: libvirt-daemon-driver-interface = %{version}-%{release}
+Requires: libvirt-daemon-driver-network = %{version}-%{release}
+Requires: libvirt-daemon-driver-nodedev = %{version}-%{release}
+Requires: libvirt-daemon-driver-nwfilter = %{version}-%{release}
+Requires: libvirt-daemon-driver-secret = %{version}-%{release}
+Requires: libvirt-daemon-driver-storage = %{version}-%{release}
+%endif
 
 %description daemon-lxc
 Server side daemon and driver required to manage the virtualization
@@ -648,32 +921,55 @@ capabilities of LXC
 %endif
 
 
-#%if %{with_uml}
-#%package daemon-uml
-#Summary: Server side daemon & driver required to run UML guests
-#Group: Development/Libraries
+%if %{with_uml}
+%package daemon-uml
+Summary: Server side daemon & driver required to run UML guests
+Group: Development/Libraries
 
-#Requires: libvirt-daemon = %{version}-%{release}
-## There are no UML kernel RPMs in Fedora/RHEL to depend on.
+Requires: libvirt-daemon = %{version}-%{release}
+%if %{with_driver_modules}
+Requires: libvirt-daemon-driver-uml = %{version}-%{release}
+Requires: libvirt-daemon-driver-interface = %{version}-%{release}
+Requires: libvirt-daemon-driver-network = %{version}-%{release}
+Requires: libvirt-daemon-driver-nodedev = %{version}-%{release}
+Requires: libvirt-daemon-driver-nwfilter = %{version}-%{release}
+Requires: libvirt-daemon-driver-secret = %{version}-%{release}
+Requires: libvirt-daemon-driver-storage = %{version}-%{release}
+%endif
+# There are no UML kernel RPMs in Fedora/RHEL to depend on.
 
-#%description daemon-uml
-#Server side daemon and driver required to manage the virtualization
-#capabilities of UML
-#%endif
+%description daemon-uml
+Server side daemon and driver required to manage the virtualization
+capabilities of UML
+%endif
 
 
-#%if %{with_xen} || %{with_libxl}
-#%package daemon-xen
-#Summary: Server side daemon & driver required to run XEN guests
-#Group: Development/Libraries
+%if %{with_xen} || %{with_libxl}
+%package daemon-xen
+Summary: Server side daemon & driver required to run XEN guests
+Group: Development/Libraries
 
-#Requires: libvirt-daemon = %{version}-%{release}
-#Requires: xen
+Requires: libvirt-daemon = %{version}-%{release}
+%if %{with_driver_modules}
+%if %{with_xen}
+Requires: libvirt-daemon-driver-xen = %{version}-%{release}
+%endif
+%if %{with_libxl}
+Requires: libvirt-daemon-driver-libxl = %{version}-%{release}
+%endif
+Requires: libvirt-daemon-driver-interface = %{version}-%{release}
+Requires: libvirt-daemon-driver-network = %{version}-%{release}
+Requires: libvirt-daemon-driver-nodedev = %{version}-%{release}
+Requires: libvirt-daemon-driver-nwfilter = %{version}-%{release}
+Requires: libvirt-daemon-driver-secret = %{version}-%{release}
+Requires: libvirt-daemon-driver-storage = %{version}-%{release}
+%endif
+Requires: xen
 
-#%description daemon-xen
-#Server side daemon and driver required to manage the virtualization
-#capabilities of XEN
-#%endif
+%description daemon-xen
+Server side daemon and driver required to manage the virtualization
+capabilities of XEN
+%endif
 %endif
 
 %package client
@@ -711,19 +1007,19 @@ Requires: pkgconfig
 %description devel
 Include header files & development libraries for the libvirt C library.
 
-#%if %{with_sanlock}
-#%package lock-sanlock
-#Summary: Sanlock lock manager plugin for QEMU driver
-#Group: Development/Libraries
-#Requires: sanlock >= 1.8
-##for virt-sanlock-cleanup require augeas
-#Requires: augeas
-#Requires: %{name} = %{version}-%{release}
+%if %{with_sanlock}
+%package lock-sanlock
+Summary: Sanlock lock manager plugin for QEMU driver
+Group: Development/Libraries
+Requires: sanlock >= 1.8
+#for virt-sanlock-cleanup require augeas
+Requires: augeas
+Requires: %{name}-daemon = %{version}-%{release}
 
-#%description lock-sanlock
-#Includes the Sanlock lock manager plugin for the QEMU
-#driver
-#%endif
+%description lock-sanlock
+Includes the Sanlock lock manager plugin for the QEMU
+driver
+%endif
 
 %if %{with_python}
 %package python
@@ -794,6 +1090,10 @@ of recent versions of Linux (and other OSes).
 %define _without_vmware --without-vmware
 %endif
 
+%if ! %{with_parallels}
+%define _without_parallels --without-parallels
+%endif
+
 %if ! %{with_polkit}
 %define _without_polkit --without-polkit
 %endif
@@ -836,6 +1136,14 @@ of recent versions of Linux (and other OSes).
 
 %if ! %{with_storage_mpath}
 %define _without_storage_mpath --without-storage-mpath
+%endif
+
+%if ! %{with_storage_rbd}
+%define _without_storage_rbd --without-storage-rbd
+%endif
+
+%if ! %{with_storage_sheepdog}
+%define _without_storage_sheepdog --without-storage-sheepdog
 %endif
 
 %if ! %{with_numactl}
@@ -890,6 +1198,14 @@ of recent versions of Linux (and other OSes).
 %define _without_dtrace --without-dtrace
 %endif
 
+%if ! %{with_driver_modules}
+%define _without_driver_modules --without-driver-modules
+%endif
+
+%if %{with_firewalld}
+%define _with_firewalld --with-firewalld
+%endif
+
 %define when  %(date +"%%F-%%T")
 %define where %(hostname)
 %define who   %{?packager}%{!?packager:Unknown}
@@ -924,6 +1240,7 @@ autoreconf -if
            %{?_without_esx} \
            %{?_without_hyperv} \
            %{?_without_vmware} \
+           %{?_without_parallels} \
            %{?_without_network} \
            %{?_with_rhel5_api} \
            %{?_without_storage_fs} \
@@ -931,10 +1248,13 @@ autoreconf -if
            %{?_without_storage_iscsi} \
            %{?_without_storage_disk} \
            %{?_without_storage_mpath} \
+           %{?_without_storage_rbd} \
+           %{?_without_storage_sheepdog} \
            %{?_without_numactl} \
            %{?_without_numad} \
            %{?_without_capng} \
            %{?_without_netcf} \
+           %{?_without_selinux} \
            %{?_without_hal} \
            %{?_without_udev} \
            %{?_without_yajl} \
@@ -943,13 +1263,12 @@ autoreconf -if
            %{?_without_macvtap} \
            %{?_without_audit} \
            %{?_without_dtrace} \
+           %{?_without_driver_modules} \
+           %{?_with_firewalld} \
            %{with_packager} \
            %{with_packager_version} \
            --with-qemu-user=%{qemu_user} \
            --with-qemu-group=%{qemu_group} \
-           --without-selinux \
-           --with-capng \
-           --with-udev \
            %{init_scripts}
 make %{?_smp_mflags}
 gzip -9 ChangeLog
@@ -968,6 +1287,10 @@ rm -f $RPM_BUILD_ROOT%{_libdir}/python*/site-packages/*.la
 rm -f $RPM_BUILD_ROOT%{_libdir}/python*/site-packages/*.a
 rm -f $RPM_BUILD_ROOT%{_libdir}/libvirt/lock-driver/*.la
 rm -f $RPM_BUILD_ROOT%{_libdir}/libvirt/lock-driver/*.a
+%if %{with_driver_modules}
+rm -f $RPM_BUILD_ROOT%{_libdir}/libvirt/connection-driver/*.la
+rm -f $RPM_BUILD_ROOT%{_libdir}/libvirt/connection-driver/*.a
+%endif
 
 %if %{with_network}
 install -d -m 0755 $RPM_BUILD_ROOT%{_datadir}/lib/libvirt/dnsmasq/
@@ -990,6 +1313,11 @@ rm -f $RPM_BUILD_ROOT%{_datadir}/augeas/lenses/libvirtd_qemu.aug
 rm -f $RPM_BUILD_ROOT%{_datadir}/augeas/lenses/tests/test_libvirtd_qemu.aug
 %endif
 %find_lang %{name}
+
+%if ! %{with_sanlock}
+rm -f $RPM_BUILD_ROOT%{_datadir}/augeas/lenses/libvirt_sanlock.aug
+rm -f $RPM_BUILD_ROOT%{_datadir}/augeas/lenses/tests/test_libvirt_sanlock.aug
+%endif
 
 %if ! %{with_lxc}
 rm -f $RPM_BUILD_ROOT%{_datadir}/augeas/lenses/libvirtd_lxc.aug
@@ -1020,14 +1348,16 @@ rm -fr %{buildroot}
 
 %check
 cd tests
-# These 3 tests don't current work in a mock build root
-for i in nodeinfotest daemon-conf seclabeltest
+make
+# These tests don't current work in a mock build root
+for i in nodeinfotest seclabeltest
 do
   rm -f $i
-  printf "#!/bin/sh\nexit 0\n" > $i
+  printf 'int main(void) { return 0; }' > $i.c
+  printf '#!/bin/sh\nexit 0\n' > $i
   chmod +x $i
 done
-#make check
+make check
 
 %if %{with_libvirtd}
 %pre daemon
@@ -1094,9 +1424,9 @@ if [ $1 -eq 1 ] ; then
 fi
 %else
 %if %{with_cgconfig}
-# Starting with Fedora 16, systemd automounts all cgroups, and cgconfig is
-# no longer a necessary service.
-%if 0%{?rhel} || (0%{?fedora} && 0%{?fedora} < 16)
+# Starting with Fedora 16/RHEL-7, systemd automounts all cgroups,
+# and cgconfig is no longer a necessary service.
+%if (0%{?rhel} && 0%{?rhel} < 7) || (0%{?fedora} && 0%{?fedora} < 16)
 if [ "$1" -eq "1" ]; then
 /sbin/chkconfig cgconfig on
 fi
@@ -1105,7 +1435,7 @@ fi
 
 /sbin/chkconfig --add libvirtd
 if [ "$1" -ge "1" ]; then
-	/sbin/service libvirtd condrestart > /dev/null 2>&1
+    /sbin/service libvirtd condrestart > /dev/null 2>&1
 fi
 %endif
 
@@ -1327,6 +1657,7 @@ rm -f $RPM_BUILD_ROOT%{_sysconfdir}/sysctl.d/libvirtd
 
 %{_mandir}/man8/libvirtd.8*
 
+%if %{with_driver_modules}
 %if %{with_network}
 %files daemon-config-network
 %defattr(-, root, root)
@@ -1338,45 +1669,110 @@ rm -f $RPM_BUILD_ROOT%{_sysconfdir}/sysctl.d/libvirtd
 %{_sysconfdir}/libvirt/nwfilter/*.xml
 %endif
 
-#%if %{with_qemu_tcg}
-#%files daemon-qemu
-#%defattr(-, root, root)
-#%endif
+%if %{with_interface}
+%files daemon-driver-interface
+%defattr(-, root, root)
+%{_libdir}/%{name}/connection-driver/libvirt_driver_interface.so
+%endif
 
-#%if %{with_qemu_kvm}
-#%files daemon-kvm
-#%defattr(-, root, root)
-#%endif
+%if %{with_network}
+%files daemon-driver-network
+%defattr(-, root, root)
+%{_libdir}/%{name}/connection-driver/libvirt_driver_network.so
+%endif
+
+%if %{with_nodedev}
+%files daemon-driver-nodedev
+%defattr(-, root, root)
+%{_libdir}/%{name}/connection-driver/libvirt_driver_nodedev.so
+%endif
+
+%if %{with_nwfilter}
+%files daemon-driver-nwfilter
+%defattr(-, root, root)
+%{_libdir}/%{name}/connection-driver/libvirt_driver_nwfilter.so
+%endif
+
+%files daemon-driver-secret
+%defattr(-, root, root)
+%{_libdir}/%{name}/connection-driver/libvirt_driver_secret.so
+
+%if %{with_storage}
+%files daemon-driver-storage
+%defattr(-, root, root)
+%{_libdir}/%{name}/connection-driver/libvirt_driver_storage.so
+%endif
+
+%if %{with_qemu}
+%files daemon-driver-qemu
+%defattr(-, root, root)
+%{_libdir}/%{name}/connection-driver/libvirt_driver_qemu.so
+%endif
+
+%if %{with_lxc}
+%files daemon-driver-lxc
+%defattr(-, root, root)
+%{_libdir}/%{name}/connection-driver/libvirt_driver_lxc.so
+%endif
+
+%if %{with_uml}
+%files daemon-driver-uml
+%defattr(-, root, root)
+%{_libdir}/%{name}/connection-driver/libvirt_driver_uml.so
+%endif
+
+%if %{with_xen}
+%files daemon-driver-xen
+%defattr(-, root, root)
+%{_libdir}/%{name}/connection-driver/libvirt_driver_xen.so
+%endif
+
+%if %{with_libxl}
+%files daemon-driver-libxl
+%defattr(-, root, root)
+%{_libdir}/%{name}/connection-driver/libvirt_driver_libxl.so
+%endif
+%endif
+
+%if %{with_qemu_tcg}
+%files daemon-qemu
+%defattr(-, root, root)
+%endif
+
+%if %{with_qemu_kvm}
+%files daemon-kvm
+%defattr(-, root, root)
+%endif
 
 %if %{with_lxc}
 %files daemon-lxc
 %defattr(-, root, root)
 %endif
 
-#%if %{with_uml}
-#%files daemon-uml
-#%defattr(-, root, root)
-#%endif
-
-#%if %{with_xen} || %{with_libxl}
-#%files daemon-xen
-#%defattr(-, root, root)
-#%endif
+%if %{with_uml}
+%files daemon-uml
+%defattr(-, root, root)
 %endif
 
-#%if %{with_sanlock}
-#%files lock-sanlock
-#%defattr(-, root, root)
-#%if %{with_qemu}
-#%config(noreplace) %{_sysconfdir}/libvirt/qemu-sanlock.conf
-#%endif
-#%attr(0755, root, root) %{_libdir}/libvirt/lock-driver/sanlock.so
-#%{_datadir}/augeas/lenses/libvirt_sanlock.aug
-#%{_datadir}/augeas/lenses/tests/test_libvirt_sanlock.aug
-#%dir %attr(0700, root, root) %{_localstatedir}/lib/libvirt/sanlock
-#%{_sbindir}/virt-sanlock-cleanup
-#%{_mandir}/man8/virt-sanlock-cleanup.8*
-#%endif
+%if %{with_xen} || %{with_libxl}
+%files daemon-xen
+%defattr(-, root, root)
+%endif
+%endif
+
+%if %{with_sanlock}
+%files lock-sanlock
+%defattr(-, root, root)
+%if %{with_qemu}
+%config(noreplace) %{_sysconfdir}/libvirt/qemu-sanlock.conf
+%endif
+%attr(0755, root, root) %{_libdir}/libvirt/lock-driver/sanlock.so
+%{_datadir}/augeas/lenses/libvirt_sanlock.aug
+%{_datadir}/augeas/lenses/tests/test_libvirt_sanlock.aug
+%dir %attr(0700, root, root) %{_localstatedir}/lib/libvirt/sanlock
+%{_sbindir}/virt-sanlock-cleanup
+%{_mandir}/man8/virt-sanlock-cleanup.8*
+%endif
 
 %files client -f %{name}.lang
 %defattr(-, root, root)
@@ -1395,6 +1791,7 @@ rm -f $RPM_BUILD_ROOT%{_sysconfdir}/sysctl.d/libvirtd
 
 %if %{with_dtrace}
 %{_datadir}/systemtap/tapset/libvirt_probes.stp
+%{_datadir}/systemtap/tapset/libvirt_qemu_probes.stp
 %{_datadir}/systemtap/tapset/libvirt_functions.stp
 %endif
 
@@ -1466,6 +1863,32 @@ rm -f $RPM_BUILD_ROOT%{_sysconfdir}/sysctl.d/libvirtd
 %endif
 
 %changelog
+* Fri Aug 31 2012 Daniel Veillard <veillard@redhat.com> - 0.10.1-1
+- bugfixes and a brown paper bag
+
+* Wed Aug 29 2012 Daniel Veillard <veillard@redhat.com> - 0.10.0-1
+- agent: add qemuAgentArbitraryCommand() for general qemu agent command
+- Introduce virDomainPinEmulator and virDomainGetEmulatorPinInfo functions
+- network: use firewalld instead of iptables, when available
+- network: make network driver vlan-aware
+- esx: Implement network driver
+- driver for parallels hypervisor
+- Various LXC improvements
+- Add virDomainGetHostname
+- a lot of bug fixes, improvements and portability work
+
+* Mon Jul  2 2012 Daniel Veillard <veillard@redhat.com> - 0.9.13-1
+- S390: support for s390(x)
+- snapshot: implement new APIs for esx and vbox
+- snapshot: new query APIs and many improvements
+- virsh: Allow users to reedit rejected XML
+- nwfilter: add DHCP snooping
+- Enable driver modules in libvirt RPM
+- Default to enable driver modules for libvirtd
+- storage backend: Add RBD (RADOS Block Device) support
+- sVirt support for LXC domains inprovement
+- a lot of bug fixes, improvements and portability work
+
 * Mon May 14 2012 Daniel Veillard <veillard@redhat.com> - 0.9.12-1
 - qemu: allow snapshotting of sheepdog and rbd disks
 - blockjob: add new APIs
