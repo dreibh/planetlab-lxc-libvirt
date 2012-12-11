@@ -2,7 +2,7 @@
 
 %define mainstream_version 0.10.1
 %define module_version_varname mainstream_version
-%define taglevel 1
+%define taglevel 0
 
 # If neither fedora nor rhel was defined, try to guess them from %{dist}
 %if !0%{?rhel} && !0%{?fedora}
