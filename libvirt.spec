@@ -1,5 +1,9 @@
 # -*- rpm-spec -*-
 
+%define mainstream_version 0.10.1
+%define module_version_varname mainstream_version
+%define taglevel 1
+
 # If neither fedora nor rhel was defined, try to guess them from %{dist}
 %if !0%{?rhel} && !0%{?fedora}
 %{expand:%(echo "%{?dist}" | \
@@ -314,8 +318,8 @@
 
 Summary: Library providing a simple virtualization API
 Name: libvirt
-Version: 0.10.1
-Release: 1%{?dist}%{?extra_release}
+Version: %{mainstream_version}
+Release: %{taglevel}
 License: LGPLv2+
 Group: Development/Libraries
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
