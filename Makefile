@@ -1,9 +1,11 @@
 WEBFETCH                := wget
 SHA1SUM                 := sha1sum
 
+# tried to download this on the fly using git archive at git://libvirt.org/libvirt.git
+# but it feels like git archive is not supported/allowed there
 ALL                     += libvirt
-libvirt-URL            := ftp://libvirt.org/libvirt/libvirt-0.10.1.tar.gz
-libvirt-SHA1SUM        := d079d549fa3852dcc7aab05577deaf6c4777ca7d
+libvirt-URL            := ftp://libvirt.org/libvirt/libvirt-0.10.2.2.tar.gz
+libvirt-SHA1SUM        := 689866fad0374de95477c9ccbcb47915e78fbf8b
 libvirt                := $(notdir $(libvirt-URL))
 
 all: $(ALL)
