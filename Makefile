@@ -4,8 +4,8 @@ SHA1SUM                 := sha1sum
 # tried to download this on the fly using git archive at git://libvirt.org/libvirt.git
 # but it feels like git archive is not supported/allowed there
 ALL                     += libvirt
-libvirt-URL            := ftp://libvirt.org/libvirt/libvirt-0.10.2.2.tar.gz
-libvirt-SHA1SUM        := 689866fad0374de95477c9ccbcb47915e78fbf8b
+libvirt-URL            := ftp://libvirt.org/libvirt/libvirt-0.10.2.tar.gz
+libvirt-SHA1SUM        := 1579fbd4272ede4a897143da666fe76b290b7767
 libvirt                := $(notdir $(libvirt-URL))
 
 all: $(ALL)
