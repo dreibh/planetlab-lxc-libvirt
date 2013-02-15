@@ -1,6 +1,6 @@
 # -*- rpm-spec -*-
 
-%define mainstream_version 0.10.2
+%define mainstream_version 0.10.2.2
 %define module_version_varname mainstream_version
 %define taglevel 0
 

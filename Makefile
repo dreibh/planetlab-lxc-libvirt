@@ -4,9 +4,10 @@ SHA1SUM                 := sha1sum
 # tried to download this on the fly using git archive at git://libvirt.org/libvirt.git
 # but it feels like git archive is not supported/allowed there
 ALL                     += libvirt
-libvirt-URL            := ftp://libvirt.org/libvirt/libvirt-0.10.2.tar.gz
-libvirt-SHA1SUM        := 1579fbd4272ede4a897143da666fe76b290b7767
-libvirt                := $(notdir $(libvirt-URL))
+libvirt-URL1           := http://mirror.onelab.eu/third-party/libvirt-0.10.2.2.tar.gz
+libvirt-URL2           := http://planet-lab.org/third-party/libvirt-0.10.2.2.tar.gz
+libvirt-SHA1SUM        := 689866fad0374de95477c9ccbcb47915e78fbf8b
+libvirt                := $(notdir $(libvirt-URL1))
 
 all: $(ALL)
 .PHONY: all
@@ -14,18 +15,20 @@ all: $(ALL)
 ##############################
 define download_target
 $(1): $($(1))
-.PHONY: $($(1))
+.PHONY: $(1)
 $($(1)): 
-		@if [ ! -e "$($(1))" ] ; then echo "$(WEBFETCH) $($(1)-URL)" ; $(WEBFETCH) $($(1)-URL) ; fi
-		@if [ ! -e "$($(1))" ] ; then echo "Could not download source file: $($(1)) does not exist" ; exit 1 ; fi
-		@if test "$$$$($(SHA1SUM) $($(1)) | awk '{print $$$$1}')" != "$($(1)-SHA1SUM)" ; then \
-			echo "sha1sum of the downloaded $($(1)) does not match the one from 'Makefile'" ; \
-			echo "Local copy: $$$$($(SHA1SUM) $($(1)))" ; \
-			echo "In Makefile: $($(1)-SHA1SUM)" ; \
-			false ; \
-		else \
-			ls -l $($(1)) ; \
-		fi
+	@if [ ! -e "$($(1))" ] ; then \
+	{ echo Using primary; echo "$(WEBFETCH) $($(1)-URL1)" ; $(WEBFETCH) $($(1)-URL1) ; } || \
+	{ echo Using secondary; echo "$(WEBFETCH) $($(1)-URL2)" ; $(WEBFETCH) $($(1)-URL2) ; } ; fi
+	@if [ ! -e "$($(1))" ] ; then echo "Could not download source file: $($(1)) does not exist" ; exit 1 ; fi
+	@if test "$$$$($(SHA1SUM) $($(1)) | awk '{print $$$$1}')" != "$($(1)-SHA1SUM)" ; then \
+	    echo "sha1sum of the downloaded $($(1)) does not match the one from 'Makefile'" ; \
+	    echo "Local copy: $$$$($(SHA1SUM) $($(1)))" ; \
+	    echo "In Makefile: $($(1)-SHA1SUM)" ; \
+	    false ; \
+	else \
+	    ls -l $($(1)) ; \
+	fi
 endef
 
 $(eval $(call download_target,libvirt))
