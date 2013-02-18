@@ -4,6 +4,29 @@
 %define module_version_varname mainstream_version
 %define taglevel 0
 
+#libvirt-RPMFLAGS := --without storage-disk --without storage-iscsi --without storage-scsi \
+#	                --without storage-fs --without storage-lvm \
+#	                --without polkit --without sasl --without audit --with capng --with udev \
+#	                --without netcf --without avahi --without sanlock \
+#	                --without xen --without qemu --without hyperv --without phyp --without esx \
+#	                --without libxl \
+%define _without_storage_disk	true
+%define _without_storage_iscsi	true
+%define _without_storage_fs	true
+%define _without_storage_lvm	true
+%define _without_polkit		true
+%define _without_sasl		true
+%define _without_audit		true
+%define _without_netcf		true
+%define _without_avahi		true
+%define _without_sanlock	true
+%define _without_xen		true
+%define _without_qemu		true
+%define _without_hyperv		true
+%define _without_phyp		true
+%define _without_esx		true
+%define _without_libxl		true
+
 # If neither fedora nor rhel was defined, try to guess them from %{dist}
 %if !0%{?rhel} && !0%{?fedora}
 %{expand:%(echo "%{?dist}" | \
