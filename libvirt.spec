@@ -1106,7 +1106,7 @@ of recent versions of Linux (and other OSes).
 
 %prep
 %setup -q
-%patch1 -p1 
+%patch1 -p1 -R
 
 %build
 %if ! %{with_xen}
