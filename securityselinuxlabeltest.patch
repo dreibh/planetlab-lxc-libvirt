@@ -1,0 +1,27 @@
+tests: Don't build securityselinuxlabeltest without qemu
+author	Jiri Denemark <jdenemar@redhat.com>	
+Wed, 30 Jan 2013 15:44:06 +0000 (16:44 +0100)
+committer	Jiri Denemark <jdenemar@redhat.com>	
+Thu, 31 Jan 2013 09:32:43 +0000 (10:32 +0100)
+Sources for securityselinuxlabeltest are only defined if qemu driver is
+enabled so we should not try to build the test if qemu driver is
+disabled.
+
+tests/Makefile.am		patch | blob | history
+diff --git a/tests/Makefile.am b/tests/Makefile.am
+index 9da0b4a..0194db2 100644 (file)
+--- a/tests/Makefile.am
++++ b/tests/Makefile.am
+@@ -108,10 +108,12 @@ endif
+ 
+ if WITH_SECDRIVER_SELINUX
+ test_programs += securityselinuxtest
++if WITH_QEMU
+ if WITH_ATTR
+ test_programs += securityselinuxlabeltest
+ endif
+ endif
++endif
+ 
+ if WITH_DRIVER_MODULES
+ test_programs += virdrivermoduletest

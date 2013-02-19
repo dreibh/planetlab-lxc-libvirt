@@ -379,6 +379,7 @@ URL: http://libvirt.org/
 %endif
 Source: http://libvirt.org/sources/%{?mainturl}libvirt-%{version}.tar.gz
 Patch1: libcurl.patch
+Patch2: securityselinuxlabeltest.patch
 
 %if %{with_libvirtd}
 Requires: libvirt-daemon = %{version}-%{release}
@@ -1107,6 +1108,7 @@ of recent versions of Linux (and other OSes).
 %prep
 %setup -q
 %patch1 -p1
+%patch2 -p1
 
 %build
 %if ! %{with_xen}
