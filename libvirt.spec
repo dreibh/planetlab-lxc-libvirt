@@ -1316,6 +1316,7 @@ of recent versions of Linux (and other OSes).
     %endif
 %endif
 
+autoreconf
 %configure %{?_without_xen} \
            %{?_without_qemu} \
            %{?_without_openvz} \
