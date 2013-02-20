@@ -407,7 +407,9 @@ Requires: libvirt-daemon-driver-uml = %{version}-%{release}
 Requires: libvirt-daemon-driver-xen = %{version}-%{release}
         %endif
 
+	%if %{with_interface}
 Requires: libvirt-daemon-driver-interface = %{version}-%{release}
+	%endif
 Requires: libvirt-daemon-driver-secret = %{version}-%{release}
 Requires: libvirt-daemon-driver-storage = %{version}-%{release}
 Requires: libvirt-daemon-driver-network = %{version}-%{release}
