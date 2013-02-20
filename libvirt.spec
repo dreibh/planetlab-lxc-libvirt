@@ -17,7 +17,8 @@
 %define _without_polkit		true
 %define _without_sasl		true
 %define _without_audit		true
-%define _without_netcf		true
+#interface requires netcf
+#%define _without_netcf		true
 %define _without_avahi		true
 %define _without_sanlock	true
 %define _without_xen		true
