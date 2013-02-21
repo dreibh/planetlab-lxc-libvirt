@@ -28,6 +28,8 @@
 %define _without_esx		true
 %define _without_libxl		true
 
+%define enable_autotools	1
+
 # If neither fedora nor rhel was defined, try to guess them from %{dist}
 %if !0%{?rhel} && !0%{?fedora}
 %{expand:%(echo "%{?dist}" | \
@@ -1316,7 +1318,6 @@ of recent versions of Linux (and other OSes).
     %endif
 %endif
 
-autoreconf
 %configure %{?_without_xen} \
            %{?_without_qemu} \
            %{?_without_openvz} \
