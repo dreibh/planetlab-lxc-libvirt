@@ -2,7 +2,7 @@
 
 %define mainstream_version 1.0.2
 %define module_version_varname mainstream_version
-%define taglevel 0
+%define taglevel 1
 
 #libvirt-RPMFLAGS := --without storage-disk --without storage-iscsi --without storage-scsi \
 #	                --without storage-fs --without storage-lvm \
