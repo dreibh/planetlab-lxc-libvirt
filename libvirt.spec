@@ -28,6 +28,9 @@
 %define _without_esx		true
 %define _without_libxl		true
 
+# turn this off even on f18 as an attempt to get back /proc/meminfo
+%define _without_fuse		true
+
 %define enable_autotools	1
 
 # If neither fedora nor rhel was defined, try to guess them from %{dist}
@@ -234,10 +237,10 @@
     %define with_capng     0%{!?_without_capng:1}
 %endif
 
-### # fuse is used to provide virtualized /proc for LXC
-### %if 0%{?fedora} >= 17 || 0%{?rhel} >= 7
-###     %define with_fuse      0%{!?_without_fuse:1}
-### %endif
+# fuse is used to provide virtualized /proc for LXC
+%if 0%{?fedora} >= 17 || 0%{?rhel} >= 7
+    %define with_fuse      0%{!?_without_fuse:1}
+%endif
 
 # netcf is used to manage network interfaces in Fedora 12 / RHEL-6 or newer
 %if 0%{?fedora} >= 12 || 0%{?rhel} >= 6
