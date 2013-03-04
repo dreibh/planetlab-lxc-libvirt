@@ -234,10 +234,10 @@
     %define with_capng     0%{!?_without_capng:1}
 %endif
 
-# fuse is used to provide virtualized /proc for LXC
-%if 0%{?fedora} >= 17 || 0%{?rhel} >= 7
-    %define with_fuse      0%{!?_without_fuse:1}
-%endif
+### # fuse is used to provide virtualized /proc for LXC
+### %if 0%{?fedora} >= 17 || 0%{?rhel} >= 7
+###     %define with_fuse      0%{!?_without_fuse:1}
+### %endif
 
 # netcf is used to manage network interfaces in Fedora 12 / RHEL-6 or newer
 %if 0%{?fedora} >= 12 || 0%{?rhel} >= 6
@@ -559,6 +559,7 @@ BuildRequires: libcap-ng-devel >= 0.5.0
 %endif
 %if %{with_fuse}
 BuildRequires: fuse-devel >= 2.8.6
+Requires: fuse
 %endif
 %if %{with_phyp} || %{with_libssh2}
 BuildRequires: libssh2-devel >= 1.3.0
