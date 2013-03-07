@@ -2,7 +2,7 @@
 
 %define mainstream_version 1.0.2
 %define module_version_varname mainstream_version
-%define taglevel 1
+%define taglevel 2
 
 #libvirt-RPMFLAGS := --without storage-disk --without storage-iscsi --without storage-scsi \
 #	                --without storage-fs --without storage-lvm \
@@ -2030,6 +2030,9 @@ fi
 %endif
 
 %changelog
+* Thu Mar 07 2013 Thierry Parmentelat <thierry.parmentelat@sophia.inria.fr> - libvirt-1.0.2-2
+- turn off fuse no matter what, as this conflicts with the way procprotect works
+
 * Wed Jan 30 2013 Daniel Veillard <veillard@redhat.com> - 1.0.2-1
 - LXC improvements
 - S390 architecture improvement
