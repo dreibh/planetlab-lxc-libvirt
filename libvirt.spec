@@ -1,8 +1,8 @@
 # -*- rpm-spec -*-
 
-%define mainstream_version 1.0.2
+%define mainstream_version 1.0.4
 %define module_version_varname mainstream_version
-%define taglevel 2
+%define taglevel 0
 
 #libvirt-RPMFLAGS := --without storage-disk --without storage-iscsi --without storage-scsi \
 #	                --without storage-fs --without storage-lvm \
@@ -384,8 +384,6 @@ URL: http://libvirt.org/
     %define mainturl stable_updates/
 %endif
 Source: http://libvirt.org/sources/%{?mainturl}libvirt-%{version}.tar.gz
-Patch1: libcurl.patch
-Patch3: securityselinuxlabeltest.patch
 
 %if %{with_libvirtd}
 Requires: libvirt-daemon = %{version}-%{release}
@@ -1116,8 +1114,6 @@ of recent versions of Linux (and other OSes).
 
 %prep
 %setup -q
-%patch1 -p1
-%patch3 -p1
 
 %build
 %if ! %{with_xen}
