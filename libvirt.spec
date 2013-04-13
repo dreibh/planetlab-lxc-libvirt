@@ -2,7 +2,7 @@
 
 %define mainstream_version 1.0.4
 %define module_version_varname mainstream_version
-%define taglevel 0
+%define taglevel 1
 
 #libvirt-RPMFLAGS := --without storage-disk --without storage-iscsi --without storage-scsi \
 #	                --without storage-fs --without storage-lvm \
@@ -2028,6 +2028,9 @@ fi
 %endif
 
 %changelog
+* Wed Apr 10 2013 Thierry Parmentelat <thierry.parmentelat@sophia.inria.fr> - libvirt-1.0.4-1
+- use upstream 1.0.4
+
 * Thu Mar 07 2013 Thierry Parmentelat <thierry.parmentelat@sophia.inria.fr> - libvirt-1.0.2-2
 - turn off fuse no matter what, as this conflicts with the way procprotect works
 
