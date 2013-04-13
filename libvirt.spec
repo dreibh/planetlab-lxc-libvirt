@@ -384,6 +384,7 @@ URL: http://libvirt.org/
     %define mainturl stable_updates/
 %endif
 Source: http://libvirt.org/sources/%{?mainturl}libvirt-%{version}.tar.gz
+Patch1: virgetlasterror.patch
 
 %if %{with_libvirtd}
 Requires: libvirt-daemon = %{version}-%{release}
@@ -1114,6 +1115,7 @@ of recent versions of Linux (and other OSes).
 
 %prep
 %setup -q
+%patch1 -p1
 
 %build
 %if ! %{with_xen}
