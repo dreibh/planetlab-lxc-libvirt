@@ -2,7 +2,7 @@
 
 %define mainstream_version 1.0.4
 %define module_version_varname mainstream_version
-%define taglevel 1
+%define taglevel 2
 
 #libvirt-RPMFLAGS := --without storage-disk --without storage-iscsi --without storage-scsi \
 #	                --without storage-fs --without storage-lvm \
@@ -2028,6 +2028,9 @@ fi
 %endif
 
 %changelog
+* Sat Apr 13 2013 Thierry Parmentelat <thierry.parmentelat@sophia.inria.fr> - libvirt-1.0.4-2
+- path libvirt.py so virGetLastError gets found
+
 * Wed Apr 10 2013 Thierry Parmentelat <thierry.parmentelat@sophia.inria.fr> - libvirt-1.0.4-1
 - use upstream 1.0.4
 
