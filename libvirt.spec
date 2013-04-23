@@ -2,7 +2,7 @@
 
 %define mainstream_version 1.0.4
 %define module_version_varname mainstream_version
-%define taglevel 2
+%define taglevel 3
 
 #libvirt-RPMFLAGS := --without storage-disk --without storage-iscsi --without storage-scsi \
 #	                --without storage-fs --without storage-lvm \
@@ -2028,6 +2028,10 @@ fi
 %endif
 
 %changelog
+* Tue Apr 23 2013 Thierry Parmentelat <thierry.parmentelat@sophia.inria.fr> - libvirt-1.0.4-3
+- Apparently that patch is not needed with 1.0.4
+- https://www.redhat.com/archives/libvir-list/2013-April/msg01203.html
+
 * Sat Apr 13 2013 Thierry Parmentelat <thierry.parmentelat@sophia.inria.fr> - libvirt-1.0.4-2
 - path libvirt.py so virGetLastError gets found
 
