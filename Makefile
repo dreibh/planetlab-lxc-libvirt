@@ -47,7 +47,7 @@ BUILDOPTS = --without xen --without qemu --without hyperv --without phyp --witho
 			--without netcf --without avahi --without polkit --without sasl --without audit \
 			--without storage-iscsi --without storage-scsi --without storage-disk \
 			--without storage-rbd --without selinux --without dtrace --without sanlock \
-			--without libxl --with capng --with udev --with interface \
+			--without libxl --without vbox --with capng --with udev --with interface \
 			--define 'packager PlanetLab'
 
 trees: sources

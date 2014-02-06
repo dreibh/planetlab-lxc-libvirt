@@ -9,7 +9,7 @@
 ##                       --without polkit --without sasl --without audit --with capng --with udev \
 ##                       --without netcf --without avahi --without sanlock \
 ##                       --without xen --without qemu --without hyperv --without phyp --without esx \
-##                       --without libxl \
+##                       --without libxl --without vbox \
 %define _without_storage_disk   true
 %define _without_storage_iscsi  true
 %define _without_storage_fs     true
