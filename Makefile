@@ -17,7 +17,7 @@ $(1): $($(1))
 .PHONY: $(1)
 $($(1)): 
 	@if [ ! -e "$($(1))" ] ; then \
-	{ echo Using primary; echo "$(WEBFETCH) $($(1)-URL)" ; $(WEBFETCH) $($(1)-URL1) ; } ; fi
+	{ echo Using primary; echo "$(WEBFETCH) $($(1)-URL)" ; $(WEBFETCH) $($(1)-URL) ; } ; fi
 	@if [ ! -e "$($(1))" ] ; then echo "Could not download source file: $($(1)) does not exist" ; exit 1 ; fi
 	@if test "$$$$($(SHA1SUM) $($(1)) | awk '{print $$$$1}')" != "$($(1)-SHA1SUM)" ; then \
 	    echo "sha1sum of the downloaded $($(1)) does not match the one from 'Makefile'" ; \
