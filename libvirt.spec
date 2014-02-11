@@ -3,6 +3,7 @@
 %define mainstream_version 1.2.1
 %define module_version_varname mainstream_version
 %define taglevel 0
+%define packager PlanetLab/OneLab
 
 #libvirt-RPMFLAGS := --without storage-disk --without storage-iscsi --without storage-scsi \
 ##                       --without storage-fs --without storage-lvm \
@@ -17,8 +18,6 @@
 %define _without_polkit         true
 %define _without_sasl           true
 %define _without_audit          true
-#interface requires netcf
-#%define _without_netcf         true
 %define _without_avahi          true
 %define _without_sanlock        true
 %define _without_xen            true
@@ -28,7 +27,7 @@
 %define _without_esx            true
 %define _without_libxl          true
 %define _without_vbox           true
-
+%define _without_uml		true
 
 #turn this off even on f18 as an attempt to get back /proc/meminfo
 %define _without_fuse           true
@@ -271,11 +270,6 @@
     %define with_udev     0%{!?_without_udev:%{server_drivers}}
 %else
     %define with_hal       0%{!?_without_hal:%{server_drivers}}
-%endif
-
-# interface requires netcf
-%if ! 0%{?with_netcf}
-    %define with_interface     0
 %endif
 
 # Enable yajl library for JSON mode with QEMU
@@ -1545,6 +1539,12 @@ rm -f $RPM_BUILD_ROOT%{_prefix}/lib/sysctl.d/libvirtd.conf
 rm -fr %{buildroot}
 
 %check
+# PlanetLab build
+# do not run tests, this is mainstream business, and more importantly
+# our own setup is ti build inside a container already and we've seen
+# occasional red herrings because of that
+exit
+#
 cd tests
 make
 # These tests don't current work in a mock build root
