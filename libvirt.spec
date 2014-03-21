@@ -2,7 +2,7 @@
 
 %define mainstream_version 1.2.1
 %define module_version_varname mainstream_version
-%define taglevel 0
+%define taglevel 1
 %define packager PlanetLab/OneLab
 
 #libvirt-RPMFLAGS := --without storage-disk --without storage-iscsi --without storage-scsi \
@@ -2186,6 +2186,9 @@ exit 0
 %doc examples/systemtap
 
 %changelog
+* Fri Mar 21 2014 Thierry Parmentelat <thierry.parmentelat@sophia.inria.fr> - libvirt-1.2.1-1
+- builds fine on f{18,20}
+
 * Mon Jan 27 2014 Cole Robinson <crobinso@redhat.com> - 1.2.1-2
 - Rebuild for openwsman soname bump
 
