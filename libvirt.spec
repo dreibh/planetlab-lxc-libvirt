@@ -1,6 +1,6 @@
 # -*- rpm-spec -*-
 
-%define mainstream_version 1.2.1
+%define mainstream_version 1.2.3
 %define module_version_varname mainstream_version
 %define taglevel 1
 %define packager PlanetLab/OneLab
