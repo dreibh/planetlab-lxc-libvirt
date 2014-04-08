@@ -1240,7 +1240,7 @@ driver
 
 %prep
 %setup -q
-%patch1 -p0 -b .bypass-netns-check
+%patch1 -p1 -b .bypass-netns-check
 
 %build
 %if ! %{with_xen}
