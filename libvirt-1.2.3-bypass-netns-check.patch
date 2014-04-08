@@ -1,0 +1,18 @@
+diff -ru libvirt-1.2.3/src/lxc/lxc_driver.c libvirt-1.2.3.pl/src/lxc/lxc_driver.c
+--- libvirt-1.2.3/src/lxc/lxc_driver.c	2014-03-27 11:35:01.000000000 +0100
++++ libvirt-1.2.3.pl/src/lxc/lxc_driver.c	2014-04-08 12:25:03.000000000 +0200
+@@ -1475,9 +1475,14 @@
+     const char *argv[] = {"ip", "link", "set", "lo", "netns", "-1", NULL};
+     int ip_rc;
+ 
++    /* somehow this check fails on PL nodes
++       most likely related to selinux as suggested in
++       https://bugzilla.redhat.com/show_bug.cgi?id=1050210
++       
+     if (virRun(argv, &ip_rc) < 0 ||
+         !(WIFEXITED(ip_rc) && (WEXITSTATUS(ip_rc) != 255)))
+         return 0;
++    */
+ 
+     if (lxcContainerAvailable(LXC_CONTAINER_FEATURE_NET) < 0)
+         return 0;

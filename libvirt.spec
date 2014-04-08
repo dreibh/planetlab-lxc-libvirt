@@ -411,6 +411,7 @@ URL: http://libvirt.org/
     %define mainturl stable_updates/
 %endif
 Source: http://libvirt.org/sources/%{?mainturl}libvirt-%{version}.tar.gz
+Patch1: libvirt-1.2.3-bypass-netns-check.patch
 
 %if %{with_libvirtd}
 Requires: libvirt-daemon = %{version}-%{release}
@@ -1190,6 +1191,7 @@ driver
 
 %prep
 %setup -q
+%patch1 -p0 -b .bypass-netns-check
 
 %build
 %if ! %{with_xen}
