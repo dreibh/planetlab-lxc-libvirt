@@ -2,7 +2,7 @@
 
 %define mainstream_version 1.2.3
 %define module_version_varname mainstream_version
-%define taglevel 0
+%define taglevel 1
 %define packager PlanetLab/OneLab
 
 #libvirt-RPMFLAGS := --without storage-disk --without storage-iscsi --without storage-scsi \
@@ -2262,6 +2262,9 @@ exit 0
 %doc examples/systemtap
 
 %changelog
+* Mon Apr 28 2014 Thierry Parmentelat <thierry.parmentelat@sophia.inria.fr> - libvirt-1.2.3-1
+- tested version of 1.2.3
+
 * Tue Apr  1 2014 Daniel Veillard <veillard@redhat.com> - 1.2.3-1
 - add new virDomainCoreDumpWithFormat API (Qiao Nuohan)
 - conf: Introduce virDomainDeviceGetInfo API (Jiri Denemark)
