@@ -2,7 +2,7 @@
 
 %define mainstream_version 1.2.3
 %define module_version_varname mainstream_version
-%define taglevel 1
+%define taglevel 2
 %define packager PlanetLab/OneLab
 
 #libvirt-RPMFLAGS := --without storage-disk --without storage-iscsi --without storage-scsi \
@@ -2262,6 +2262,11 @@ exit 0
 %doc examples/systemtap
 
 %changelog
+* Mon Apr 28 2014 Thierry Parmentelat <thierry.parmentelat@sophia.inria.fr> - libvirt-1.2.3-2
+- no change
+- libvirt-python needs a release of libvirt that matches its own
+- and there was a screw up when tagging libvirt-python, so we catch up
+
 * Mon Apr 28 2014 Thierry Parmentelat <thierry.parmentelat@sophia.inria.fr> - libvirt-1.2.3-1
 - tested version of 1.2.3
 
