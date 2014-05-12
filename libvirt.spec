@@ -1,6 +1,6 @@
 # -*- rpm-spec -*-
 
-%define mainstream_version 1.2.3
+%define mainstream_version 1.2.4
 %define module_version_varname mainstream_version
 %define taglevel 2
 %define packager PlanetLab/OneLab
@@ -432,7 +432,6 @@ URL: http://libvirt.org/
     %define mainturl stable_updates/
 %endif
 Source: http://libvirt.org/sources/%{?mainturl}libvirt-%{version}.tar.gz
-Patch1: libvirt-1.2.3-bypass-netns-check.patch
 
 %if %{with_libvirtd}
 Requires: libvirt-daemon = %{version}-%{release}
@@ -1240,7 +1239,6 @@ driver
 
 %prep
 %setup -q
-%patch1 -p1 -b .bypass-netns-check
 
 %build
 %if ! %{with_xen}
