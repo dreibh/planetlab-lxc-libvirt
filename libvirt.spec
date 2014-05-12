@@ -1923,7 +1923,8 @@ exit 0
 %{_datadir}/augeas/lenses/virtlockd.aug
 %{_datadir}/augeas/lenses/tests/test_virtlockd.aug
 %{_datadir}/augeas/lenses/libvirt_lockd.aug
-%{_datadir}/augeas/lenses/tests/test_libvirt_lockd.aug
+# PL: is it because we don't run tests ?
+#%{_datadir}/augeas/lenses/tests/test_libvirt_lockd.aug
 
     %if %{with_polkit}
         %if 0%{?fedora} >= 12 || 0%{?rhel} >= 6
