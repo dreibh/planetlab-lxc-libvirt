@@ -2,7 +2,7 @@
 
 %define mainstream_version 1.2.5
 %define module_version_varname mainstream_version
-%define taglevel 1
+%define taglevel 0
 %define packager PlanetLab/OneLab
 
 #libvirt-RPMFLAGS := --without storage-disk --without storage-iscsi --without storage-scsi \
