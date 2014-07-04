@@ -1,6 +1,6 @@
 # -*- rpm-spec -*-
 
-%define mainstream_version 1.2.5
+%define mainstream_version 1.2.6
 %define module_version_varname mainstream_version
 %define taglevel 0
 %define packager PlanetLab/OneLab
@@ -27,13 +27,13 @@
 %define _without_esx            true
 %define _without_libxl          true
 %define _without_vbox           true
-%define _without_uml		true
+%define _without_uml            true
 
 #turn this off even on f18 as an attempt to get back /proc/meminfo
 %define _without_fuse           true
 
 %define enable_autotools        1
- 
+
 # If neither fedora nor rhel was defined, try to guess them from %{dist}
 %if !0%{?rhel} && !0%{?fedora}
 %{expand:%(echo "%{?dist}" | \
@@ -296,16 +296,11 @@
 %endif
 
 # Enable sanlock library for lock management with QEMU
-# Sanlock is available only on i686 x86_64 for RHEL
+# Sanlock is available only on x86_64 for RHEL
 %if 0%{?fedora} >= 16
     %define with_sanlock 0%{!?_without_sanlock:%{server_drivers}}
 %endif
-%if 0%{?rhel} == 6
-    %ifarch %{ix86} x86_64
-        %define with_sanlock 0%{!?_without_sanlock:%{server_drivers}}
-    %endif
-%endif
-%if 0%{?rhel} >= 7
+%if 0%{?rhel} >= 6
     %ifarch x86_64
         %define with_sanlock 0%{!?_without_sanlock:%{server_drivers}}
     %endif
@@ -423,8 +418,8 @@
 
 Summary: Library providing a simple virtualization API
 Name: libvirt
-Version: %{mainstream_version}
-Release: %{taglevel}
+Version: 1.2.6
+Release: 1%{?dist}%{?extra_release}
 License: LGPLv2+
 Group: Development/Libraries
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
@@ -1612,12 +1607,6 @@ rm -f $RPM_BUILD_ROOT%{_prefix}/lib/sysctl.d/libvirtd.conf
 rm -fr %{buildroot}
 
 %check
-# PlanetLab build
-# do not run tests, this is mainstream business, and more importantly
-# our own setup is ti build inside a container already and we've seen
-# occasional red herrings because of that
-exit
-#
 cd tests
 make
 # These tests don't current work in a mock build root
@@ -1923,8 +1912,9 @@ exit 0
 %{_datadir}/augeas/lenses/virtlockd.aug
 %{_datadir}/augeas/lenses/tests/test_virtlockd.aug
 %{_datadir}/augeas/lenses/libvirt_lockd.aug
-# PL: is it because we don't run tests ?
-#%{_datadir}/augeas/lenses/tests/test_libvirt_lockd.aug
+    %if %{with_qemu}
+%{_datadir}/augeas/lenses/tests/test_libvirt_lockd.aug
+    %endif
 
     %if %{with_polkit}
         %if 0%{?fedora} >= 12 || 0%{?rhel} >= 6
@@ -1961,6 +1951,7 @@ exit 0
 %dir %attr(0700, root, root) %{_sysconfdir}/libvirt/qemu/networks/autostart
 %dir %attr(0700, root, root) %{_localstatedir}/lib/libvirt/network/
 %dir %attr(0755, root, root) %{_localstatedir}/lib/libvirt/dnsmasq/
+%attr(0755, root, root) %{_libexecdir}/libvirt_leaseshelper
         %endif
         %if %{with_nwfilter}
 %dir %attr(0700, root, root) %{_sysconfdir}/libvirt/nwfilter/
@@ -2036,6 +2027,7 @@ exit 0
 %ghost %dir %{_localstatedir}/run/libvirt/network/
 %dir %attr(0700, root, root) %{_localstatedir}/lib/libvirt/network/
 %dir %attr(0755, root, root) %{_localstatedir}/lib/libvirt/dnsmasq/
+%attr(0755, root, root) %{_libexecdir}/libvirt_leaseshelper
 %{_libdir}/%{name}/connection-driver/libvirt_driver_network.so
         %endif
 
@@ -2190,7 +2182,9 @@ exit 0
 %{_bindir}/virt-xml-validate
 %{_bindir}/virt-pki-validate
 %{_bindir}/virt-host-validate
-%{_libdir}/lib*.so.*
+%{_libdir}/libvirt.so.*
+%{_libdir}/libvirt-qemu.so.*
+%{_libdir}/libvirt-lxc.so.*
 
 %if %{with_dtrace}
 %{_datadir}/systemtap/tapset/libvirt_probes*.stp
@@ -2247,10 +2241,17 @@ exit 0
 %files devel
 %defattr(-, root, root)
 
-%{_libdir}/lib*.so
+%{_libdir}/libvirt.so
+%{_libdir}/libvirt-qemu.so
+%{_libdir}/libvirt-lxc.so
 %dir %{_includedir}/libvirt
-%{_includedir}/libvirt/*.h
+%{_includedir}/libvirt/virterror.h
+%{_includedir}/libvirt/libvirt.h
+%{_includedir}/libvirt/libvirt-qemu.h
+%{_includedir}/libvirt/libvirt-lxc.h
 %{_libdir}/pkgconfig/libvirt.pc
+%{_libdir}/pkgconfig/libvirt-qemu.pc
+%{_libdir}/pkgconfig/libvirt-lxc.pc
 
 %dir %{_datadir}/libvirt/api/
 %{_datadir}/libvirt/api/libvirt-api.xml
@@ -2269,30 +2270,27 @@ exit 0
 %doc examples/systemtap
 
 %changelog
-* Mon Jun 02 2014 Thierry Parmentelat <thierry.parmentelat@sophia.inria.fr> - libvirt-1.2.4-1
-- complete build for 1.2.4, works fine on f18, still has an issue with f20 for slice re-creation
+* Wed Jul  2 2014 Daniel Veillard <veillard@redhat.com> - 1.2.6-1
+- libxl: add migration support and fixes
+- various improvements and fixes for NUMA
+- many improvements and bug fixes
+
+* Mon Jun  2 2014 Daniel Veillard <veillard@redhat.com> - 1.2.5-1
+- LSN-2014-0003: Don't expand entities when parsing XML (security)
+- Introduce virDomain{Get,Set}Time APIs
+- Introduce virDomainFSFreeze() and virDomainFSThaw() public API
+- various improvements and bug fixes
 
 * Sun May  4 2014 Daniel Veillard <veillard@redhat.com> - 1.2.4-1
 - various improvements and bug fixes
 - lot of internal code refactoring
 
-* Mon Apr 28 2014 Thierry Parmentelat <thierry.parmentelat@sophia.inria.fr> - libvirt-1.2.3-2
-- no change
-- libvirt-python needs a release of libvirt that matches its own
-- and there was a screw up when tagging libvirt-python, so we catch up
-
-* Mon Apr 28 2014 Thierry Parmentelat <thierry.parmentelat@sophia.inria.fr> - libvirt-1.2.3-1
-- tested version of 1.2.3
-
 * Tue Apr  1 2014 Daniel Veillard <veillard@redhat.com> - 1.2.3-1
-- add new virDomainCoreDumpWithFormat API (Qiao Nuohan)
-- conf: Introduce virDomainDeviceGetInfo API (Jiri Denemark)
-- more features and fixes on bhyve driver (Roman Bogorodskiy)
-- lot of cleanups and improvement on the Xen driver (Chunyan Liu, Jim Fehlig)
+- add new virDomainCoreDumpWithFormat API
+- conf: Introduce virDomainDeviceGetInfo API
+- more features and fixes on bhyve driver
+- lot of cleanups and improvement on the Xen driver
 - a lot of various improvements and bug fixes
-
-* Fri Mar 21 2014 Thierry Parmentelat <thierry.parmentelat@sophia.inria.fr> - libvirt-1.2.1-1
-- builds fine on f{18,20}
 
 * Sun Mar  2 2014 Daniel Veillard <veillard@redhat.com> - 1.2.2-1
 - add LXC from native conversion tool
