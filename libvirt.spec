@@ -556,7 +556,7 @@ BuildRequires: libapparmor-devel
 %if %{with_network}
 BuildRequires: dnsmasq >= 2.41
 BuildRequires: iptables
-BuildRequires: iptables-ipv6
+BuildRequires: iptables-services
 BuildRequires: radvd
 %endif
 %if %{with_nwfilter}
@@ -800,7 +800,7 @@ Requires: libvirt-daemon = %{version}-%{release}
 Requires: dnsmasq >= 2.41
 Requires: radvd
 Requires: iptables
-Requires: iptables-ipv6
+Requires: iptables-services
 
 %description daemon-driver-network
 The network driver plugin for the libvirtd daemon, providing
@@ -815,7 +815,7 @@ Summary: Nwfilter driver plugin for the libvirtd daemon
 Group: Development/Libraries
 Requires: libvirt-daemon = %{version}-%{release}
 Requires: iptables
-Requires: iptables-ipv6
+Requires: iptables-services
 Requires: ebtables
 
 %description daemon-driver-nwfilter
