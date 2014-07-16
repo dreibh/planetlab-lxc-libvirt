@@ -2,7 +2,7 @@
 
 %define mainstream_version 1.2.5
 %define module_version_varname mainstream_version
-%define taglevel 0
+%define taglevel 1
 %define packager PlanetLab/OneLab
 
 #libvirt-RPMFLAGS := --without storage-disk --without storage-iscsi --without storage-scsi \
@@ -2269,6 +2269,9 @@ exit 0
 %doc examples/systemtap
 
 %changelog
+* Wed Jul 16 2014 Thierry Parmentelat <thierry.parmentelat@sophia.inria.fr> - libvirt-1.2.5-1
+- libvirt 1.2.5 for PL
+
 * Mon Jun 02 2014 Thierry Parmentelat <thierry.parmentelat@sophia.inria.fr> - libvirt-1.2.4-1
 - complete build for 1.2.4, works fine on f18, still has an issue with f20 for slice re-creation
 
