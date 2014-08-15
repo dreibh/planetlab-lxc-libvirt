@@ -1,5 +1,10 @@
 # -*- rpm-spec -*-
 
+%define mainstream_version 1.2.7
+%define module_version_varname mainstream_version
+%define taglevel 0
+%define packager PlanetLab/OneLab/NorNet
+
 # If neither fedora nor rhel was defined, try to guess them from %{dist}
 %if !0%{?rhel} && !0%{?fedora}
 %{expand:%(echo "%{?dist}" | \
