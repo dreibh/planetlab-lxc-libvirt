@@ -4,9 +4,9 @@ SHA1SUM                 := sha1sum
 # tried to download this on the fly using git archive at git://libvirt.org/libvirt.git
 # but it feels like git archive is not supported/allowed there
 ALL                     += libvirt
-libvirt-URL1           := http://libvirt.org/sources/libvirt-1.2.6.tar.gz
-libvirt-URL2           := http://mirror.onelab.eu/third-party/libvirt-1.2.6.tar.gz
-libvirt-SHA1SUM        := f8a26fe2856435aca142dfdaf2172e08dc59d369
+libvirt-URL1           := http://libvirt.org/sources/libvirt-1.2.7.tar.gz
+libvirt-URL2           := http://mirror.onelab.eu/third-party/libvirt-1.2.7.tar.gz
+libvirt-SHA1SUM        := dcf9b51a1a5c52465c9d0d76aad0bdbc4e9b7a3f
 libvirt                := $(notdir $(libvirt-URL1))
 
 all: $(ALL)
