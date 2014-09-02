@@ -1,10 +1,42 @@
 # -*- rpm-spec -*-
 
-%define mainstream_version 1.2.7
+%define mainstream_version 1.2.8
 %define module_version_varname mainstream_version
 %define taglevel 0
-%define packager PlanetLab/OneLab/NorNet
+%define packager PlanetLab/OneLab
 
+#libvirt-RPMFLAGS := --without storage-disk --without storage-iscsi --without storage-scsi \
+##                       --without storage-fs --without storage-lvm \
+##                       --without polkit --without sasl --without audit --with capng --with udev \
+##                       --without netcf --without avahi --without sanlock \
+##                       --without xen --without qemu --without hyperv --without phyp --without esx \
+##                       --without libxl --without vbox \
+%define _without_storage_disk   true
+%define _without_storage_iscsi  true
+%define _without_storage_fs     true
+%define _without_storage_lvm    true
+%define _without_polkit         true
+%define _without_sasl           true
+%define _without_audit          true
+%define _without_avahi          true
+%define _without_sanlock        true
+%define _without_xen            true
+%define _without_qemu           true
+%define _without_hyperv         true
+%define _without_phyp           true
+%define _without_esx            true
+%define _without_libxl          true
+%define _without_vbox           true
+%define _without_uml            true
+
+#turn this off even on f18 as an attempt to get back /proc/meminfo
+%define _without_fuse           true
+
+%define enable_autotools        1
+
+
+# This spec file assumes you are building for Fedora 13 or newer,
+# or for RHEL 5 or newer. It may need some tweaks for other distros.
 # If neither fedora nor rhel was defined, try to guess them from %{dist}
 %if !0%{?rhel} && !0%{?fedora}
 %{expand:%(echo "%{?dist}" | \
@@ -144,7 +176,6 @@
 %define with_libpcap       0%{!?_without_libpcap:0}
 %define with_macvtap       0%{!?_without_macvtap:0}
 %define with_libnl         0%{!?_without_libnl:0}
-%define with_audit         0%{!?_without_audit:0}
 %define with_dtrace        0%{!?_without_dtrace:0}
 %define with_cgconfig      0%{!?_without_cgconfig:0}
 %define with_sanlock       0%{!?_without_sanlock:0}
@@ -158,6 +189,7 @@
 
 # Non-server/HV driver defaults which are always enabled
 %define with_sasl          0%{!?_without_sasl:1}
+%define with_audit         0%{!?_without_audit:1}
 
 
 # Finally set the OS / architecture specific special cases
@@ -228,41 +260,26 @@
     %define with_libxl 0
 %endif
 
-# PolicyKit was introduced in Fedora 8 / RHEL-6 or newer
-%if 0%{?fedora} >= 8 || 0%{?rhel} >= 6
-    %define with_polkit    0%{!?_without_polkit:1}
-%endif
-
-# libcapng is used to manage capabilities in Fedora 12 / RHEL-6 or newer
-%if 0%{?fedora} >= 12 || 0%{?rhel} >= 6
-    %define with_capng     0%{!?_without_capng:1}
-%endif
-
 # fuse is used to provide virtualized /proc for LXC
 %if 0%{?fedora} >= 17 || 0%{?rhel} >= 7
     %define with_fuse      0%{!?_without_fuse:1}
 %endif
 
-# netcf is used to manage network interfaces in Fedora 12 / RHEL-6 or newer
-%if 0%{?fedora} >= 12 || 0%{?rhel} >= 6
-    %define with_netcf     0%{!?_without_netcf:%{server_drivers}}
-%endif
-
-# udev is used to manage host devices in Fedora 12 / RHEL-6 or newer
-%if 0%{?fedora} >= 12 || 0%{?rhel} >= 6
-    %define with_udev     0%{!?_without_udev:%{server_drivers}}
-%else
+# RHEL 5 lacks newer tools
+%if 0%{?rhel} == 5
     %define with_hal       0%{!?_without_hal:%{server_drivers}}
+%else
+    %define with_polkit    0%{!?_without_polkit:1}
+    %define with_capng     0%{!?_without_capng:1}
+    %define with_netcf     0%{!?_without_netcf:%{server_drivers}}
+    %define with_udev      0%{!?_without_udev:%{server_drivers}}
+    %define with_yajl      0%{!?_without_yajl:%{server_drivers}}
+    %define with_dtrace 1
 %endif
 
 # interface requires netcf
 %if ! 0%{?with_netcf}
     %define with_interface     0
-%endif
-
-# Enable yajl library for JSON mode with QEMU
-%if 0%{?fedora} >= 13 || 0%{?rhel} >= 6
-    %define with_yajl     0%{!?_without_yajl:%{server_drivers}}
 %endif
 
 # Enable sanlock library for lock management with QEMU
@@ -325,16 +342,8 @@
     %define with_libnl 1
 %endif
 
-%if 0%{?fedora} >= 11 || 0%{?rhel} >= 5
-    %define with_audit    0%{!?_without_audit:1}
-%endif
-
-%if 0%{?fedora} >= 13 || 0%{?rhel} >= 6
-    %define with_dtrace 1
-%endif
-
 # Pull in cgroups config system
-%if 0%{?fedora} >= 12 || 0%{?rhel} >= 6
+%if 0%{?fedora} || 0%{?rhel} >= 6
     %if %{with_qemu} || %{with_lxc}
         %define with_cgconfig 0%{!?_without_cgconfig:1}
     %endif
@@ -354,7 +363,7 @@
 
 
 # Force QEMU to run as non-root
-%if 0%{?fedora} >= 12 || 0%{?rhel} >= 6
+%if 0%{?fedora} || 0%{?rhel} >= 6
     %define qemu_user  qemu
     %define qemu_group  qemu
 %else
@@ -388,8 +397,8 @@
 
 Summary: Library providing a simple virtualization API
 Name: libvirt
-Version: 1.2.7
-Release: 0%{?dist}%{?extra_release}
+Version: 1.2.8
+Release: 1%{?dist}%{?extra_release}
 License: LGPLv2+
 Group: Development/Libraries
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
@@ -431,9 +440,9 @@ Requires: libvirt-daemon-driver-vbox = %{version}-%{release}
 Requires: libvirt-daemon-driver-nwfilter = %{version}-%{release}
         %endif
 
-	%if %{with_interface}
+   %if %{with_interface}
 Requires: libvirt-daemon-driver-interface = %{version}-%{release}
-	%endif
+   %endif
 Requires: libvirt-daemon-driver-secret = %{version}-%{release}
 Requires: libvirt-daemon-driver-storage = %{version}-%{release}
 Requires: libvirt-daemon-driver-network = %{version}-%{release}
@@ -451,6 +460,7 @@ BuildRequires: gettext-devel
 BuildRequires: libtool
 BuildRequires: /usr/bin/pod2man
 %endif
+BuildRequires: perl
 BuildRequires: python
 %if %{with_systemd}
 BuildRequires: systemd-units
@@ -477,7 +487,7 @@ BuildRequires: libattr-devel
 # For pool-build probing for existing pools
 BuildRequires: libblkid-devel >= 2.17
 %endif
-%if 0%{?fedora} >= 12 || 0%{?rhel} >= 6
+%if 0%{?fedora} || 0%{?rhel} >= 6
 # for augparse, optionally used in testing
 BuildRequires: augeas
 %endif
@@ -542,7 +552,7 @@ BuildRequires: cyrus-sasl-devel
     %if 0%{?fedora} >= 20 || 0%{?rhel} >= 7
 BuildRequires: polkit-devel >= 0.112
     %else
-        %if 0%{?fedora} >= 12 || 0%{?rhel} >= 6
+        %if 0%{?fedora} || 0%{?rhel} >= 6
 BuildRequires: polkit-devel >= 0.93
         %else
 BuildRequires: PolicyKit-devel >= 0.6
@@ -625,7 +635,7 @@ BuildRequires: netcf-devel >= 0.1.4
     %endif
 %endif
 %if %{with_esx}
-    %if 0%{?fedora} >= 9 || 0%{?rhel} >= 6
+    %if 0%{?fedora} || 0%{?rhel} >= 6
 BuildRequires: libcurl-devel
     %else
 BuildRequires: curl-devel
@@ -709,7 +719,7 @@ Requires: avahi-libs
         %if 0%{?fedora} >= 20 || 0%{?rhel} >= 7
 Requires: polkit >= 0.112
         %else
-            %if 0%{?fedora} >= 12 || 0%{?rhel} >=6
+            %if 0%{?fedora} || 0%{?rhel} >=6
 Requires: polkit >= 0.93
             %else
 Requires: PolicyKit >= 0.6
@@ -869,7 +879,7 @@ Requires: nfs-utils
 # For mkfs
 Requires: util-linux
 # For glusterfs
-                %if 0%{?fedora} >= 11
+                %if 0%{?fedora}
 Requires: glusterfs-client >= 2.0.1
                 %endif
             %endif
@@ -1583,7 +1593,7 @@ mv $RPM_BUILD_ROOT%{_datadir}/systemtap/tapset/libvirt_qemu_probes.stp \
     %endif
 %endif
 
-%if 0%{?fedora} < 14 && 0%{?rhel} < 6
+%if 0%{?rhel} == 5
 rm -f $RPM_BUILD_ROOT%{_prefix}/lib/sysctl.d/libvirtd.conf
 %endif
 
@@ -1611,7 +1621,7 @@ fi
     %if ! %{with_driver_modules}
         %if %{with_qemu}
 %pre daemon
-            %if 0%{?fedora} >= 12 || 0%{?rhel} >= 6
+            %if 0%{?fedora} || 0%{?rhel} >= 6
 # We want soft static allocation of well-known ids, as disk images
 # are commonly shared across NFS mounts by id rather than name; see
 # https://fedoraproject.org/wiki/Packaging:UsersAndGroups
@@ -1675,11 +1685,13 @@ done
 
     %if %{with_systemd}
         %if %{with_systemd_macros}
-            %systemd_post virtlockd.socket libvirtd.service
+            %systemd_post virtlockd.socket libvirtd.service libvirtd.socket
         %else
 if [ $1 -eq 1 ] ; then
     # Initial installation
-    /bin/systemctl enable virtlockd.socket libvirtd.service >/dev/null 2>&1 || :
+    /bin/systemctl enable \
+        virtlockd.socket \
+        libvirtd.service >/dev/null 2>&1 || :
 fi
         %endif
     %else
@@ -1700,12 +1712,24 @@ fi
 %preun daemon
     %if %{with_systemd}
         %if %{with_systemd_macros}
-            %systemd_preun libvirtd.service virtlockd.socket virtlockd.service
+            %systemd_preun \
+                libvirtd.socket \
+                libvirtd.service \
+                virtlockd.socket \
+                virtlockd.service
         %else
 if [ $1 -eq 0 ] ; then
     # Package removal, not upgrade
-    /bin/systemctl --no-reload disable libvirtd.service virtlockd.socket virtlockd.service > /dev/null 2>&1 || :
-    /bin/systemctl stop libvirtd.service virtlockd.socket virtlockd.service > /dev/null 2>&1 || :
+    /bin/systemctl --no-reload disable \
+        libvirtd.socket \
+        libvirtd.service \
+        virtlockd.socket \
+        virtlockd.service > /dev/null 2>&1 || :
+    /bin/systemctl stop \
+        libvirtd.socket \
+        libvirtd.service \
+        virtlockd.socket \
+        virtlockd.service > /dev/null 2>&1 || :
 fi
         %endif
     %else
@@ -1766,7 +1790,7 @@ fi
     %if %{with_driver_modules}
         %if %{with_qemu}
 %pre daemon-driver-qemu
-            %if 0%{?fedora} >= 12 || 0%{?rhel} >= 6
+            %if 0%{?fedora} || 0%{?rhel} >= 6
 # We want soft static allocation of well-known ids, as disk images
 # are commonly shared across NFS mounts by id rather than name; see
 # https://fedoraproject.org/wiki/Packaging:UsersAndGroups
@@ -1862,6 +1886,7 @@ exit 0
 
     %if %{with_systemd}
 %{_unitdir}/libvirtd.service
+%{_unitdir}/libvirtd.socket
 %{_unitdir}/virtlockd.service
 %{_unitdir}/virtlockd.socket
     %else
@@ -1873,7 +1898,7 @@ exit 0
 %config(noreplace) %{_sysconfdir}/sysconfig/virtlockd
 %config(noreplace) %{_sysconfdir}/libvirt/libvirtd.conf
 %config(noreplace) %{_sysconfdir}/libvirt/virtlockd.conf
-    %if 0%{?fedora} >= 14 || 0%{?rhel} >= 6
+    %if 0%{?fedora} || 0%{?rhel} >= 6
 %config(noreplace) %{_prefix}/lib/sysctl.d/libvirtd.conf
     %endif
 
@@ -1901,7 +1926,7 @@ exit 0
     %endif
 
     %if %{with_polkit}
-        %if 0%{?fedora} >= 12 || 0%{?rhel} >= 6
+        %if 0%{?fedora} || 0%{?rhel} >= 6
 %{_datadir}/polkit-1/actions/org.libvirt.unix.policy
 %{_datadir}/polkit-1/actions/org.libvirt.api.policy
         %else
@@ -2104,6 +2129,8 @@ exit 0
 %files daemon-driver-vbox
 %defattr(-, root, root)
 %{_libdir}/%{name}/connection-driver/libvirt_driver_vbox.so
+%{_libdir}/%{name}/connection-driver/libvirt_driver_vbox_network.so
+%{_libdir}/%{name}/connection-driver/libvirt_driver_vbox_storage.so
         %endif
     %endif # %{with_driver_modules}
 
@@ -2255,6 +2282,17 @@ exit 0
 %doc examples/systemtap
 
 %changelog
+* Tue Sep  2 2014 Daniel Veillard <veillard@redhat.com> - 1.2.8-1
+- blockcopy: virDomainBlockCopy with XML destination, typed params
+- Introduce API for retrieving bulk domain stats
+- Introduce virDomainOpenGraphicsFD API
+- storage: ZFS support
+- many improvements and bug fixes
+
+* Sun Aug  3 2014 Daniel Veillard <veillard@redhat.com> - 1.2.7-1
+- Introduce virConnectGetDomainCapabilities
+- many improvements and bug fixes
+
 * Wed Jul  2 2014 Daniel Veillard <veillard@redhat.com> - 1.2.6-1
 - libxl: add migration support and fixes
 - various improvements and fixes for NUMA
