@@ -2354,13 +2354,13 @@ exit 0
 - Introduce virConnectGetDomainCapabilities
 - many improvements and bug fixes
 
+* Wed Jul 16 2014 Thierry Parmentelat <thierry.parmentelat@sophia.inria.fr> - libvirt-1.2.5-1
+- libvirt 1.2.5 for PL
+
 * Wed Jul  2 2014 Daniel Veillard <veillard@redhat.com> - 1.2.6-1
 - libxl: add migration support and fixes
 - various improvements and fixes for NUMA
 - many improvements and bug fixes
-
-* Wed Jul 16 2014 Thierry Parmentelat <thierry.parmentelat@sophia.inria.fr> - libvirt-1.2.5-1
-- libvirt 1.2.5 for PL
 
 * Mon Jun  2 2014 Daniel Veillard <veillard@redhat.com> - 1.2.5-1
 - LSN-2014-0003: Don't expand entities when parsing XML (security)
