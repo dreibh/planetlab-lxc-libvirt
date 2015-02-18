@@ -2,7 +2,7 @@
 
 %define mainstream_version 1.2.11
 %define module_version_varname mainstream_version
-%define taglevel 1
+%define taglevel 2
 %define packager PlanetLab/OneLab
 
 #libvirt-RPMFLAGS := --without storage-disk --without storage-iscsi --without storage-scsi \
@@ -2321,6 +2321,9 @@ exit 0
 %doc examples/systemtap
 
 %changelog
+* Wed Feb 18 2015 Thierry Parmentelat <thierry.parmentelat@sophia.inria.fr> - libvirt-1.2.11-2
+- identical to mainstream 1.2.11
+
 * Sat Dec 13 2014 Daniel Veillard <veillard@redhat.com> - 1.2.11-1
 - CVE-2014-8131: Fix possible deadlock and segfault in qemuConnectGetAllDomainStats()
 - CVE-2014-7823: dumpxml: security hole with migratable flag
