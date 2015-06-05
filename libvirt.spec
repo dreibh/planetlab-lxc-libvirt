@@ -1,9 +1,9 @@
 # -*- rpm-spec -*-
 
-%define mainstream_version 1.2.11
+%define mainstream_version 1.2.16
 %define module_version_varname mainstream_version
 %define taglevel 2
-%define packager PlanetLab/OneLab
+%define packager PlanetLab/OneLab/NorNet
 
 #libvirt-RPMFLAGS := --without storage-disk --without storage-iscsi --without storage-scsi \
 ##                       --without storage-fs --without storage-lvm \
@@ -90,6 +90,7 @@
 %define with_vbox          0%{!?_without_vbox:%{server_drivers}}
 
 %define with_qemu_tcg      %{with_qemu}
+
 %define qemu_kvm_arches %{ix86} x86_64
 
 %if 0%{?fedora}
@@ -141,7 +142,7 @@
 %define with_storage_iscsi    0%{!?_without_storage_iscsi:%{server_drivers}}
 %define with_storage_disk     0%{!?_without_storage_disk:%{server_drivers}}
 %define with_storage_mpath    0%{!?_without_storage_mpath:%{server_drivers}}
-%if 0%{?fedora} >= 16
+%if 0%{?fedora} >= 16 || 0%{?rhel} >= 7
     %define with_storage_rbd      0%{!?_without_storage_rbd:%{server_drivers}}
 %else
     %define with_storage_rbd      0
@@ -215,6 +216,13 @@
     %endif
 %endif
 
+# librados and librbd are built only on x86_64 on rhel
+%ifnarch x86_64
+    %if 0%{?rhel} >= 7
+        %define with_storage_rbd 0
+    %endif
+%endif
+
 # RHEL doesn't ship OpenVZ, VBox, UML, PowerHypervisor,
 # VMWare, libxenserver (xenapi), libxenlight (Xen 4.1 and newer),
 # or HyperV.
@@ -281,16 +289,12 @@
 %endif
 
 # Enable sanlock library for lock management with QEMU
+# Sanlock is available only on arches where kvm is available for RHEL
 %if 0%{?fedora} >= 16
     %define with_sanlock 0%{!?_without_sanlock:%{server_drivers}}
 %endif
-%if 0%{?rhel} == 6
+%if 0%{?rhel} >= 6
     %ifarch %{qemu_kvm_arches}
-        %define with_sanlock 0%{!?_without_sanlock:%{server_drivers}}
-    %endif
-%endif
-%if 0%{?rhel} >= 7
-    %ifarch x86_64
         %define with_sanlock 0%{!?_without_sanlock:%{server_drivers}}
     %endif
 %endif
@@ -374,6 +378,12 @@
 %endif
 
 
+# Advertise OVMF and AAVMF from nightly firmware repo
+%if 0%{?fedora}
+    %define with_loader_nvram --with-loader-nvram="/usr/share/edk2.git/ovmf-x64/OVMF_CODE-pure-efi.fd:/usr/share/edk2.git/ovmf-x64/OVMF_VARS-pure-efi.fd:/usr/share/edk2.git/aarch64/QEMU_EFI-pflash.raw:/usr/share/edk2.git/aarch64/vars-template-pflash.raw"
+%endif
+
+
 # The RHEL-5 Xen package has some feature backports. This
 # flag is set to enable use of those special bits on RHEL-5
 %if 0%{?rhel} == 5
@@ -394,13 +404,15 @@
 # changes in reported warnings
 %if 0%{?rhel}
     %define enable_werror --enable-werror
+%else
+    %define enable_werror --disable-werror
 %endif
 
 
 Summary: Library providing a simple virtualization API
 Name: libvirt
-Version: %{mainstream_version}
-Release: %{taglevel}
+Version: 1.2.16
+Release: 1%{?dist}%{?extra_release}
 License: LGPLv2+
 Group: Development/Libraries
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
@@ -442,9 +454,9 @@ Requires: libvirt-daemon-driver-vbox = %{version}-%{release}
 Requires: libvirt-daemon-driver-nwfilter = %{version}-%{release}
         %endif
 
-	%if %{with_interface}
+   %if %{with_interface}
 Requires: libvirt-daemon-driver-interface = %{version}-%{release}
-	%endif
+   %endif
 Requires: libvirt-daemon-driver-secret = %{version}-%{release}
 Requires: libvirt-daemon-driver-storage = %{version}-%{release}
 Requires: libvirt-daemon-driver-network = %{version}-%{release}
@@ -601,7 +613,12 @@ BuildRequires: device-mapper-devel
     %endif
 %endif
 %if %{with_storage_rbd}
+    %if 0%{?rhel} >= 7
+BuildRequires: librados2-devel
+BuildRequires: librbd1-devel
+    %else
 BuildRequires: ceph-devel
+    %endif
 %endif
 %if %{with_storage_gluster}
     %if 0%{?rhel} >= 6
@@ -1545,6 +1562,7 @@ rm -f po/stamp-po
            %{with_packager_version} \
            --with-qemu-user=%{qemu_user} \
            --with-qemu-group=%{qemu_group} \
+           %{?with_loader_nvram} \
            %{?enable_werror} \
            --enable-expensive-tests \
            %{init_scripts}
@@ -1615,6 +1633,12 @@ rm -rf $RPM_BUILD_ROOT%{_sysconfdir}/logrotate.d/libvirtd.qemu
 rm -rf $RPM_BUILD_ROOT%{_sysconfdir}/libvirt/lxc.conf
 rm -rf $RPM_BUILD_ROOT%{_sysconfdir}/logrotate.d/libvirtd.lxc
 %endif
+%if ! %{with_libxl}
+rm -rf $RPM_BUILD_ROOT%{_sysconfdir}/libvirt/libxl.conf
+rm -rf $RPM_BUILD_ROOT%{_sysconfdir}/logrotate.d/libvirtd.libxl
+rm -f $RPM_BUILD_ROOT%{_datadir}/augeas/lenses/libvirtd_libxl.aug
+rm -f $RPM_BUILD_ROOT%{_datadir}/augeas/lenses/tests/test_libvirtd_libxl.aug
+%endif
 %if ! %{with_uml}
 rm -rf $RPM_BUILD_ROOT%{_sysconfdir}/logrotate.d/libvirtd.uml
 %endif
@@ -1632,19 +1656,13 @@ mv $RPM_BUILD_ROOT%{_datadir}/systemtap/tapset/libvirt_qemu_probes.stp \
 %endif
 
 %if 0%{?rhel} == 5
-rm -f $RPM_BUILD_ROOT%{_prefix}/lib/sysctl.d/libvirtd.conf
+rm -f $RPM_BUILD_ROOT%{_prefix}/lib/sysctl.d/60-libvirtd.conf
 %endif
 
 %clean
 rm -fr %{buildroot}
 
 %check
-# PlanetLab build
-# do not run tests, this is mainstream business, and more importantly
-# our own setup is ti build inside a container already and we've seen
-# occasional red herrings because of that
-exit
-#
 cd tests
 make
 # These tests don't current work in a mock build root
@@ -1662,9 +1680,9 @@ then
 fi
 
 %if %{with_libvirtd}
+%pre daemon
     %if ! %{with_driver_modules}
         %if %{with_qemu}
-%pre daemon
             %if 0%{?fedora} || 0%{?rhel} >= 6
 # We want soft static allocation of well-known ids, as disk images
 # are commonly shared across NFS mounts by id rather than name; see
@@ -1678,10 +1696,20 @@ if ! getent passwd qemu >/dev/null; then
     useradd -r -g qemu -G kvm -d / -s /sbin/nologin -c "qemu user" qemu
   fi
 fi
-exit 0
             %endif
         %endif
     %endif
+
+    %if %{with_polkit}
+        %if 0%{?fedora} || 0%{?rhel} >= 6
+# 'libvirt' group is just to allow password-less polkit access to
+# libvirtd. The uid number is irrelevant, so we use dynamic allocation
+# described at the above link.
+getent group libvirt >/dev/null || groupadd -r libvirt
+        %endif
+    %endif
+
+exit 0
 
 %post daemon
 
@@ -1926,7 +1954,7 @@ exit 0
 %config(noreplace) %{_sysconfdir}/libvirt/libvirtd.conf
 %config(noreplace) %{_sysconfdir}/libvirt/virtlockd.conf
     %if 0%{?fedora} || 0%{?rhel} >= 6
-%config(noreplace) %{_prefix}/lib/sysctl.d/libvirtd.conf
+%config(noreplace) %{_prefix}/lib/sysctl.d/60-libvirtd.conf
     %endif
 
 %config(noreplace) %{_sysconfdir}/logrotate.d/libvirtd
@@ -1948,13 +1976,15 @@ exit 0
 %{_datadir}/augeas/lenses/virtlockd.aug
 %{_datadir}/augeas/lenses/tests/test_virtlockd.aug
 %{_datadir}/augeas/lenses/libvirt_lockd.aug
-# PL: is it because we don't run tests ?
-#%{_datadir}/augeas/lenses/tests/test_libvirt_lockd.aug
+    %if %{with_qemu}
+%{_datadir}/augeas/lenses/tests/test_libvirt_lockd.aug
+    %endif
 
     %if %{with_polkit}
         %if 0%{?fedora} || 0%{?rhel} >= 6
 %{_datadir}/polkit-1/actions/org.libvirt.unix.policy
 %{_datadir}/polkit-1/actions/org.libvirt.api.policy
+%{_datadir}/polkit-1/rules.d/50-libvirt.rules
         %else
 %{_datadir}/PolicyKit/policy/org.libvirt.unix.policy
         %endif
@@ -2001,9 +2031,6 @@ exit 0
 %dir %attr(0700, root, root) %{_localstatedir}/log/libvirt/qemu/
 %ghost %dir %attr(0700, root, root) %{_localstatedir}/run/libvirt/qemu/
 %dir %attr(0750, %{qemu_user}, %{qemu_group}) %{_localstatedir}/lib/libvirt/qemu/
-%dir %attr(0750, %{qemu_user}, %{qemu_group}) %{_localstatedir}/lib/libvirt/qemu/channel/
-%dir %attr(0750, %{qemu_user}, %{qemu_group}) %{_localstatedir}/lib/libvirt/qemu/channel/target/
-%dir %attr(0711, %{qemu_user}, %{qemu_group}) %{_localstatedir}/lib/libvirt/qemu/nvram/
 %dir %attr(0750, %{qemu_user}, %{qemu_group}) %{_localstatedir}/cache/libvirt/qemu/
 %{_datadir}/augeas/lenses/libvirtd_qemu.aug
 %{_datadir}/augeas/lenses/tests/test_libvirtd_qemu.aug
@@ -2025,9 +2052,13 @@ exit 0
 %dir %attr(0700, root, root) %{_localstatedir}/lib/libvirt/uml/
         %endif
         %if %{with_libxl}
+%config(noreplace) %{_sysconfdir}/libvirt/libxl.conf
+%config(noreplace) %{_sysconfdir}/logrotate.d/libvirtd.libxl
 %dir %attr(0700, root, root) %{_localstatedir}/log/libvirt/libxl/
 %ghost %dir %{_localstatedir}/run/libvirt/libxl/
 %dir %attr(0700, root, root) %{_localstatedir}/lib/libvirt/libxl/
+%{_datadir}/augeas/lenses/libvirtd_libxl.aug
+%{_datadir}/augeas/lenses/tests/test_libvirtd_libxl.aug
         %endif
         %if %{with_xen}
 %dir %attr(0700, root, root) %{_localstatedir}/lib/libvirt/xen/
@@ -2104,9 +2135,6 @@ exit 0
 %config(noreplace) %{_sysconfdir}/logrotate.d/libvirtd.qemu
 %ghost %dir %attr(0700, root, root) %{_localstatedir}/run/libvirt/qemu/
 %dir %attr(0750, %{qemu_user}, %{qemu_group}) %{_localstatedir}/lib/libvirt/qemu/
-%dir %attr(0750, %{qemu_user}, %{qemu_group}) %{_localstatedir}/lib/libvirt/qemu/channel/
-%dir %attr(0750, %{qemu_user}, %{qemu_group}) %{_localstatedir}/lib/libvirt/qemu/channel/target/
-%dir %attr(0711, %{qemu_user}, %{qemu_group}) %{_localstatedir}/lib/libvirt/qemu/nvram/
 %dir %attr(0750, %{qemu_user}, %{qemu_group}) %{_localstatedir}/cache/libvirt/qemu/
 %{_datadir}/augeas/lenses/libvirtd_qemu.aug
 %{_datadir}/augeas/lenses/tests/test_libvirtd_qemu.aug
@@ -2147,6 +2175,12 @@ exit 0
         %if %{with_libxl}
 %files daemon-driver-libxl
 %defattr(-, root, root)
+%config(noreplace) %{_sysconfdir}/libvirt/libxl.conf
+%config(noreplace) %{_sysconfdir}/logrotate.d/libvirtd.libxl
+%config(noreplace) %{_sysconfdir}/libvirt/libxl-lockd.conf
+%config(noreplace) %{_sysconfdir}/libvirt/libxl-sanlock.conf
+%{_datadir}/augeas/lenses/libvirtd_libxl.aug
+%{_datadir}/augeas/lenses/tests/test_libvirtd_libxl.aug
 %dir %attr(0700, root, root) %{_localstatedir}/log/libvirt/libxl/
 %ghost %dir %{_localstatedir}/run/libvirt/libxl/
 %dir %attr(0700, root, root) %{_localstatedir}/lib/libvirt/libxl/
@@ -2157,8 +2191,6 @@ exit 0
 %files daemon-driver-vbox
 %defattr(-, root, root)
 %{_libdir}/%{name}/connection-driver/libvirt_driver_vbox.so
-%{_libdir}/%{name}/connection-driver/libvirt_driver_vbox_network.so
-%{_libdir}/%{name}/connection-driver/libvirt_driver_vbox_storage.so
         %endif
     %endif # %{with_driver_modules}
 
@@ -2321,8 +2353,35 @@ exit 0
 %doc examples/systemtap
 
 %changelog
-* Wed Feb 18 2015 Thierry Parmentelat <thierry.parmentelat@sophia.inria.fr> - libvirt-1.2.11-2
-- identical to mainstream 1.2.11
+* Mon Jun  1 2015 Daniel Veillard <veillard@redhat.com> - 1.2.16-1
+- Introduce pci-serial
+- Introduce virDomainSetUserPassword API
+- libvirt: Introduce protected key mgmt ops
+- add domain vmport feature
+- various bug fixes and improvements
+
+* Mon May  4 2015 Daniel Veillard <veillard@redhat.com> - 1.2.15-1
+- Implement virDomainAddIOThread and virDomainDelIOThread
+- libxl: Introduce configuration file for libxl driver
+- Add VIR_DOMAIN_EVENT_ID_DEVICE_ADDED event
+- various improvements to parallels driver
+- a lot of improvement and bug fixes
+
+* Thu Apr  2 2015 Daniel Veillard <veillard@redhat.com> - 1.2.14-1
+- qemu: Implement memory device hotplug
+- Implement public API for virDomainPinIOThread
+- Implement public API for virDomainGetIOThreadsInfo
+- SRIOV NIC offload feature discovery
+- a lot of improvement and bug fixes
+
+* Mon Mar  2 2015 Daniel Veillard <veillard@redhat.com> - 1.2.13-1
+- lot of improvements around NUMA code
+- a lot of improvement and bug fixes
+
+* Tue Jan 27 2015 Daniel Veillard <veillard@redhat.com> - 1.2.12-1
+- CVE-2015-0236: qemu: Check ACLs when dumping security info from snapshots
+- CVE-2015-0236: qemu: Check ACLs when dumping security info from save image
+- a lot of improvement and bug fixes
 
 * Sat Dec 13 2014 Daniel Veillard <veillard@redhat.com> - 1.2.11-1
 - CVE-2014-8131: Fix possible deadlock and segfault in qemuConnectGetAllDomainStats()
@@ -2357,9 +2416,6 @@ exit 0
 - Introduce virConnectGetDomainCapabilities
 - many improvements and bug fixes
 
-* Wed Jul 16 2014 Thierry Parmentelat <thierry.parmentelat@sophia.inria.fr> - libvirt-1.2.5-1
-- libvirt 1.2.5 for PL
-
 * Wed Jul  2 2014 Daniel Veillard <veillard@redhat.com> - 1.2.6-1
 - libxl: add migration support and fixes
 - various improvements and fixes for NUMA
@@ -2371,30 +2427,16 @@ exit 0
 - Introduce virDomainFSFreeze() and virDomainFSThaw() public API
 - various improvements and bug fixes
 
-* Mon Jun 02 2014 Thierry Parmentelat <thierry.parmentelat@sophia.inria.fr> - libvirt-1.2.4-1
-- complete build for 1.2.4, works fine on f18, still has an issue with f20 for slice re-creation
-
 * Sun May  4 2014 Daniel Veillard <veillard@redhat.com> - 1.2.4-1
 - various improvements and bug fixes
 - lot of internal code refactoring
 
-* Mon Apr 28 2014 Thierry Parmentelat <thierry.parmentelat@sophia.inria.fr> - libvirt-1.2.3-2
-- no change
-- libvirt-python needs a release of libvirt that matches its own
-- and there was a screw up when tagging libvirt-python, so we catch up
-
-* Mon Apr 28 2014 Thierry Parmentelat <thierry.parmentelat@sophia.inria.fr> - libvirt-1.2.3-1
-- tested version of 1.2.3
-
 * Tue Apr  1 2014 Daniel Veillard <veillard@redhat.com> - 1.2.3-1
-- add new virDomainCoreDumpWithFormat API (Qiao Nuohan)
-- conf: Introduce virDomainDeviceGetInfo API (Jiri Denemark)
-- more features and fixes on bhyve driver (Roman Bogorodskiy)
-- lot of cleanups and improvement on the Xen driver (Chunyan Liu, Jim Fehlig)
+- add new virDomainCoreDumpWithFormat API
+- conf: Introduce virDomainDeviceGetInfo API
+- more features and fixes on bhyve driver
+- lot of cleanups and improvement on the Xen driver
 - a lot of various improvements and bug fixes
-
-* Fri Mar 21 2014 Thierry Parmentelat <thierry.parmentelat@sophia.inria.fr> - libvirt-1.2.1-1
-- builds fine on f{18,20}
 
 * Sun Mar  2 2014 Daniel Veillard <veillard@redhat.com> - 1.2.2-1
 - add LXC from native conversion tool
