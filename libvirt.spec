@@ -1,8 +1,8 @@
 # -*- rpm-spec -*-
 
-%define mainstream_version 1.2.8
+%define mainstream_version 1.2.11
 %define module_version_varname mainstream_version
-%define taglevel 0
+%define taglevel 2
 %define packager PlanetLab/OneLab
 
 #libvirt-RPMFLAGS := --without storage-disk --without storage-iscsi --without storage-scsi \
@@ -27,14 +27,13 @@
 %define _without_esx            true
 %define _without_libxl          true
 %define _without_vbox           true
-%define _without_uml            true
+%define _without_uml		true
 
 #turn this off even on f18 as an attempt to get back /proc/meminfo
 %define _without_fuse           true
 
 %define enable_autotools        1
-
-
+ 
 # This spec file assumes you are building for Fedora 13 or newer,
 # or for RHEL 5 or newer. It may need some tweaks for other distros.
 # If neither fedora nor rhel was defined, try to guess them from %{dist}
@@ -91,7 +90,6 @@
 %define with_vbox          0%{!?_without_vbox:%{server_drivers}}
 
 %define with_qemu_tcg      %{with_qemu}
-
 %define qemu_kvm_arches %{ix86} x86_64
 
 %if 0%{?fedora}
@@ -283,12 +281,16 @@
 %endif
 
 # Enable sanlock library for lock management with QEMU
-# Sanlock is available only on arches where kvm is available for RHEL
 %if 0%{?fedora} >= 16
     %define with_sanlock 0%{!?_without_sanlock:%{server_drivers}}
 %endif
-%if 0%{?rhel} >= 6
+%if 0%{?rhel} == 6
     %ifarch %{qemu_kvm_arches}
+        %define with_sanlock 0%{!?_without_sanlock:%{server_drivers}}
+    %endif
+%endif
+%if 0%{?rhel} >= 7
+    %ifarch x86_64
         %define with_sanlock 0%{!?_without_sanlock:%{server_drivers}}
     %endif
 %endif
@@ -397,8 +399,8 @@
 
 Summary: Library providing a simple virtualization API
 Name: libvirt
-Version: 1.2.10
-Release: 1%{?dist}%{?extra_release}
+Version: %{mainstream_version}
+Release: %{taglevel}
 License: LGPLv2+
 Group: Development/Libraries
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
@@ -460,6 +462,7 @@ BuildRequires: gettext-devel
 BuildRequires: libtool
 BuildRequires: /usr/bin/pod2man
 %endif
+BuildRequires: git
 BuildRequires: perl
 BuildRequires: python
 %if %{with_systemd}
@@ -1233,6 +1236,41 @@ driver
 %prep
 %setup -q
 
+# Patches have to be stored in a temporary file because RPM has
+# a limit on the length of the result of any macro expansion;
+# if the string is longer, it's silently cropped
+%{lua:
+    tmp = os.tmpname();
+    f = io.open(tmp, "w+");
+    count = 0;
+    for i, p in ipairs(patches) do
+        f:write(p.."\n");
+        count = count + 1;
+    end;
+    f:close();
+    print("PATCHCOUNT="..count.."\n")
+    print("PATCHLIST="..tmp.."\n")
+}
+
+git init -q
+git config user.name rpm-build
+git config user.email rpm-build
+git config gc.auto 0
+git add .
+git commit -q -a --author 'rpm-build <rpm-build>' \
+           -m '%{name}-%{version} base'
+
+COUNT=$(grep '\.patch$' $PATCHLIST | wc -l)
+if [ $COUNT -ne $PATCHCOUNT ]; then
+    echo "Found $COUNT patches in $PATCHLIST, expected $PATCHCOUNT"
+    exit 1
+fi
+if [ $COUNT -gt 0 ]; then
+    xargs git am <$PATCHLIST || exit 1
+fi
+echo "Applied $COUNT patches"
+rm -f $PATCHLIST
+
 %build
 %if ! %{with_xen}
     %define _without_xen --without-xen
@@ -1601,6 +1639,12 @@ rm -f $RPM_BUILD_ROOT%{_prefix}/lib/sysctl.d/libvirtd.conf
 rm -fr %{buildroot}
 
 %check
+# PlanetLab build
+# do not run tests, this is mainstream business, and more importantly
+# our own setup is ti build inside a container already and we've seen
+# occasional red herrings because of that
+exit
+#
 cd tests
 make
 # These tests don't current work in a mock build root
@@ -1640,48 +1684,6 @@ exit 0
     %endif
 
 %post daemon
-
-    %if %{with_network}
-# All newly defined networks will have a mac address for the bridge
-# auto-generated, but networks already existing at the time of upgrade
-# will not. We need to go through all the network configs, look for
-# those that don't have a mac address, and add one.
-
-network_files=$( (cd %{_localstatedir}/lib/libvirt/network && \
-                  grep -L "mac address" *.xml; \
-                  cd %{_sysconfdir}/libvirt/qemu/networks && \
-                  grep -L "mac address" *.xml) 2>/dev/null \
-                | sort -u)
-
-for file in $network_files
-do
-   # each file exists in either the config or state directory (or both) and
-   # does not have a mac address specified in either. We add the same mac
-   # address to both files (or just one, if the other isn't there)
-
-   mac4=`printf '%X' $(($RANDOM % 256))`
-   mac5=`printf '%X' $(($RANDOM % 256))`
-   mac6=`printf '%X' $(($RANDOM % 256))`
-   for dir in %{_localstatedir}/lib/libvirt/network \
-              %{_sysconfdir}/libvirt/qemu/networks
-   do
-      if test -f $dir/$file
-      then
-         sed -i.orig -e \
-           "s|\(<bridge.*$\)|\0\n  <mac address='52:54:00:$mac4:$mac5:$mac6'/>|" \
-           $dir/$file
-         if test $? != 0
-         then
-             echo "failed to add <mac address='52:54:00:$mac4:$mac5:$mac6'/>" \
-                  "to $dir/$file"
-             mv -f $dir/$file.orig $dir/$file
-         else
-             rm -f $dir/$file.orig
-         fi
-      fi
-   done
-done
-    %endif
 
     %if %{with_systemd}
         %if %{with_systemd_macros}
@@ -1946,9 +1948,8 @@ exit 0
 %{_datadir}/augeas/lenses/virtlockd.aug
 %{_datadir}/augeas/lenses/tests/test_virtlockd.aug
 %{_datadir}/augeas/lenses/libvirt_lockd.aug
-    %if %{with_qemu}
-%{_datadir}/augeas/lenses/tests/test_libvirt_lockd.aug
-    %endif
+# PL: is it because we don't run tests ?
+#%{_datadir}/augeas/lenses/tests/test_libvirt_lockd.aug
 
     %if %{with_polkit}
         %if 0%{?fedora} || 0%{?rhel} >= 6
@@ -2320,6 +2321,16 @@ exit 0
 %doc examples/systemtap
 
 %changelog
+* Wed Feb 18 2015 Thierry Parmentelat <thierry.parmentelat@sophia.inria.fr> - libvirt-1.2.11-2
+- identical to mainstream 1.2.11
+
+* Sat Dec 13 2014 Daniel Veillard <veillard@redhat.com> - 1.2.11-1
+- CVE-2014-8131: Fix possible deadlock and segfault in qemuConnectGetAllDomainStats()
+- CVE-2014-7823: dumpxml: security hole with migratable flag
+- Implement public API for virDomainGetFSInfo
+- Add define support for the new throttle options
+- a number of improvements and bug fixes
+
 * Mon Nov  3 2014 Daniel Veillard <veillard@redhat.com> - 1.2.10-1
 - vbox: various drivers improvements
 - libxl: various drivers improvements
@@ -2346,6 +2357,9 @@ exit 0
 - Introduce virConnectGetDomainCapabilities
 - many improvements and bug fixes
 
+* Wed Jul 16 2014 Thierry Parmentelat <thierry.parmentelat@sophia.inria.fr> - libvirt-1.2.5-1
+- libvirt 1.2.5 for PL
+
 * Wed Jul  2 2014 Daniel Veillard <veillard@redhat.com> - 1.2.6-1
 - libxl: add migration support and fixes
 - various improvements and fixes for NUMA
@@ -2357,16 +2371,30 @@ exit 0
 - Introduce virDomainFSFreeze() and virDomainFSThaw() public API
 - various improvements and bug fixes
 
+* Mon Jun 02 2014 Thierry Parmentelat <thierry.parmentelat@sophia.inria.fr> - libvirt-1.2.4-1
+- complete build for 1.2.4, works fine on f18, still has an issue with f20 for slice re-creation
+
 * Sun May  4 2014 Daniel Veillard <veillard@redhat.com> - 1.2.4-1
 - various improvements and bug fixes
 - lot of internal code refactoring
 
+* Mon Apr 28 2014 Thierry Parmentelat <thierry.parmentelat@sophia.inria.fr> - libvirt-1.2.3-2
+- no change
+- libvirt-python needs a release of libvirt that matches its own
+- and there was a screw up when tagging libvirt-python, so we catch up
+
+* Mon Apr 28 2014 Thierry Parmentelat <thierry.parmentelat@sophia.inria.fr> - libvirt-1.2.3-1
+- tested version of 1.2.3
+
 * Tue Apr  1 2014 Daniel Veillard <veillard@redhat.com> - 1.2.3-1
-- add new virDomainCoreDumpWithFormat API
-- conf: Introduce virDomainDeviceGetInfo API
-- more features and fixes on bhyve driver
-- lot of cleanups and improvement on the Xen driver
+- add new virDomainCoreDumpWithFormat API (Qiao Nuohan)
+- conf: Introduce virDomainDeviceGetInfo API (Jiri Denemark)
+- more features and fixes on bhyve driver (Roman Bogorodskiy)
+- lot of cleanups and improvement on the Xen driver (Chunyan Liu, Jim Fehlig)
 - a lot of various improvements and bug fixes
+
+* Fri Mar 21 2014 Thierry Parmentelat <thierry.parmentelat@sophia.inria.fr> - libvirt-1.2.1-1
+- builds fine on f{18,20}
 
 * Sun Mar  2 2014 Daniel Veillard <veillard@redhat.com> - 1.2.2-1
 - add LXC from native conversion tool
