@@ -1564,7 +1564,7 @@ rm -f po/stamp-po
            --with-qemu-group=%{qemu_group} \
            %{?with_loader_nvram} \
            %{?enable_werror} \
-           --enable-expensive-tests \
+           --without-test \
            %{init_scripts}
 make %{?_smp_mflags}
 gzip -9 ChangeLog
