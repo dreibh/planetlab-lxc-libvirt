@@ -1,6 +1,6 @@
-# -*- rpm-spec -*-
+ -*- rpm-spec -*-
 
-%define mainstream_version 1.2.16
+%define mainstream_version 1.2.20
 %define module_version_varname mainstream_version
 %define taglevel 2
 %define packager PlanetLab/OneLab/NorNet
@@ -27,16 +27,16 @@
 %define _without_esx            true
 %define _without_libxl          true
 %define _without_vbox           true
-%define _without_uml		true
+%define _without_uml            true
 
 #turn this off even on f18 as an attempt to get back /proc/meminfo
 %define _without_fuse           true
 
 %define enable_autotools        1
- 
+
 # This spec file assumes you are building for Fedora 13 or newer,
 # or for RHEL 5 or newer. It may need some tweaks for other distros.
-# If neither fedora nor rhel was defined, try to guess them from %{dist}
+# If neither fedora nor rhel was defined, try to guess them from dist
 %if !0%{?rhel} && !0%{?fedora}
 %{expand:%(echo "%{?dist}" | \
   sed -ne 's/^\.el\([0-9]\+\).*/%%define rhel \1/p')}
@@ -47,13 +47,13 @@
 # Default to skipping autoreconf.  Distros can change just this one line
 # (or provide a command-line override) if they backport any patches that
 # touch configure.ac or Makefile.am.
-%{!?enable_autotools:%define enable_autotools 0}
+%{!?enable_autotools:%global enable_autotools 0}
 
 # A client only build will create a libvirt.so only containing
 # the generic RPC driver, and test driver and no libvirtd
 # Default to a full server + client build, but with the possibility
 # of a command-line or ~/.rpmmacros override for client-only.
-%{!?client_only:%define client_only 0}
+%{!?client_only:%global client_only 0}
 
 # Now turn off server build in certain cases
 
@@ -131,7 +131,7 @@
 %define with_esx           0%{!?_without_esx:1}
 %define with_hyperv        0%{!?_without_hyperv:1}
 %define with_xenapi        0%{!?_without_xenapi:1}
-%define with_parallels     0%{!?_without_parallels:1}
+%define with_vz            0%{!?_without_vz:1}
 # No test for bhyve, because it does not build on Linux
 
 # Then the secondary host drivers, which run inside libvirtd
@@ -235,7 +235,7 @@
     %define with_xenapi 0
     %define with_libxl 0
     %define with_hyperv 0
-    %define with_parallels 0
+    %define with_vz 0
 %endif
 
 # Fedora 17 / RHEL-7 are first where we use systemd. Although earlier
@@ -411,7 +411,7 @@
 
 Summary: Library providing a simple virtualization API
 Name: libvirt
-Version: 1.2.16
+Version: 1.2.20
 Release: 1%{?dist}%{?extra_release}
 License: LGPLv2+
 Group: Development/Libraries
@@ -454,9 +454,9 @@ Requires: libvirt-daemon-driver-vbox = %{version}-%{release}
 Requires: libvirt-daemon-driver-nwfilter = %{version}-%{release}
         %endif
 
-   %if %{with_interface}
+	%if %{with_interface}
 Requires: libvirt-daemon-driver-interface = %{version}-%{release}
-   %endif
+	%endif
 Requires: libvirt-daemon-driver-secret = %{version}-%{release}
 Requires: libvirt-daemon-driver-storage = %{version}-%{release}
 Requires: libvirt-daemon-driver-network = %{version}-%{release}
@@ -565,6 +565,8 @@ BuildRequires: cyrus-sasl-devel
 %endif
 %if %{with_polkit}
     %if 0%{?fedora} >= 20 || 0%{?rhel} >= 7
+# F22 polkit-devel doesn't pull in polkit anymore, which we need for pkcheck
+BuildRequires: polkit >= 0.112
 BuildRequires: polkit-devel >= 0.112
     %else
         %if 0%{?fedora} || 0%{?rhel} >= 6
@@ -1250,6 +1252,7 @@ Includes the Sanlock lock manager plugin for the QEMU
 driver
 %endif
 
+
 %prep
 %setup -q
 
@@ -1341,8 +1344,8 @@ rm -f $PATCHLIST
     %define _without_vmware --without-vmware
 %endif
 
-%if ! %{with_parallels}
-    %define _without_parallels --without-parallels
+%if ! %{with_vz}
+    %define _without_vz --without-vz
 %endif
 
 %if ! %{with_polkit}
@@ -1524,7 +1527,7 @@ rm -f po/stamp-po
            %{?_without_esx} \
            %{?_without_hyperv} \
            %{?_without_vmware} \
-           %{?_without_parallels} \
+           %{?_without_vz} \
            --without-bhyve \
            %{?_without_interface} \
            %{?_without_network} \
@@ -1564,7 +1567,7 @@ rm -f po/stamp-po
            --with-qemu-group=%{qemu_group} \
            %{?with_loader_nvram} \
            %{?enable_werror} \
-           --without-test \
+           --enable-expensive-tests \
            %{init_scripts}
 make %{?_smp_mflags}
 gzip -9 ChangeLog
@@ -1577,7 +1580,7 @@ rm -fr %{buildroot}
 # on RHEL 5, thus we need to expand it here.
 make install DESTDIR=%{?buildroot} SYSTEMD_UNIT_DIR=%{_unitdir}
 
-for i in object-events dominfo domsuspend hellolibvirt openauth xml/nwfilter systemtap dommigrate domtop
+for i in object-events dominfo domsuspend hellolibvirt openauth xml/nwfilter systemtap dommigrate domtop rename
 do
   (cd examples/$i ; make clean ; rm -rf .deps .libs Makefile Makefile.in)
 done
@@ -1592,6 +1595,9 @@ rm -f $RPM_BUILD_ROOT%{_libdir}/libvirt/connection-driver/*.a
 %if %{with_wireshark}
 rm -f $RPM_BUILD_ROOT%{_libdir}/wireshark/plugins/*/libvirt.la
 %endif
+
+# Temporarily get rid of not-installed libvirt-admin.so
+rm -f $RPM_BUILD_ROOT%{_libdir}/libvirt-admin.so
 
 %if %{with_network}
 install -d -m 0755 $RPM_BUILD_ROOT%{_datadir}/lib/libvirt/dnsmasq/
@@ -1663,21 +1669,21 @@ rm -f $RPM_BUILD_ROOT%{_prefix}/lib/sysctl.d/60-libvirtd.conf
 rm -fr %{buildroot}
 
 %check
-# cd tests
-# make
-# # These tests don't current work in a mock build root
-# for i in nodeinfotest seclabeltest
-# do
-#   rm -f $i
-#   printf 'int main(void) { return 0; }' > $i.c
-#   printf '#!/bin/sh\nexit 0\n' > $i
-#   chmod +x $i
-# done
-# if ! make check VIR_TEST_DEBUG=1
-# then
-#   cat test-suite.log || true
-#   exit 1
-# fi
+cd tests
+make
+# These tests don't current work in a mock build root
+for i in nodeinfotest seclabeltest
+do
+  rm -f $i
+  printf 'int main(void) { return 0; }' > $i.c
+  printf '#!/bin/sh\nexit 0\n' > $i
+  chmod +x $i
+done
+if ! make check VIR_TEST_DEBUG=1
+then
+  cat test-suite.log || true
+  exit 1
+fi
 
 %if %{with_libvirtd}
 %pre daemon
@@ -2030,7 +2036,7 @@ exit 0
 %config(noreplace) %{_sysconfdir}/logrotate.d/libvirtd.qemu
 %dir %attr(0700, root, root) %{_localstatedir}/log/libvirt/qemu/
 %ghost %dir %attr(0700, root, root) %{_localstatedir}/run/libvirt/qemu/
-%dir %attr(0750, %{qemu_user}, %{qemu_group}) %{_localstatedir}/lib/libvirt/qemu/
+%dir %attr(0751, %{qemu_user}, %{qemu_group}) %{_localstatedir}/lib/libvirt/qemu/
 %dir %attr(0750, %{qemu_user}, %{qemu_group}) %{_localstatedir}/cache/libvirt/qemu/
 %{_datadir}/augeas/lenses/libvirtd_qemu.aug
 %{_datadir}/augeas/lenses/tests/test_libvirtd_qemu.aug
@@ -2054,6 +2060,7 @@ exit 0
         %if %{with_libxl}
 %config(noreplace) %{_sysconfdir}/libvirt/libxl.conf
 %config(noreplace) %{_sysconfdir}/logrotate.d/libvirtd.libxl
+%config(noreplace) %{_sysconfdir}/libvirt/libxl-lockd.conf
 %dir %attr(0700, root, root) %{_localstatedir}/log/libvirt/libxl/
 %ghost %dir %{_localstatedir}/run/libvirt/libxl/
 %dir %attr(0700, root, root) %{_localstatedir}/lib/libvirt/libxl/
@@ -2066,6 +2073,9 @@ exit 0
     %endif # ! %{with_driver_modules}
 
     %if %{with_network}
+
+%doc examples/polkit/*.rules
+
 %files daemon-config-network
 %defattr(-, root, root)
 %dir %{_datadir}/libvirt/networks/
@@ -2134,7 +2144,7 @@ exit 0
 %config(noreplace) %{_sysconfdir}/libvirt/qemu-lockd.conf
 %config(noreplace) %{_sysconfdir}/logrotate.d/libvirtd.qemu
 %ghost %dir %attr(0700, root, root) %{_localstatedir}/run/libvirt/qemu/
-%dir %attr(0750, %{qemu_user}, %{qemu_group}) %{_localstatedir}/lib/libvirt/qemu/
+%dir %attr(0751, %{qemu_user}, %{qemu_group}) %{_localstatedir}/lib/libvirt/qemu/
 %dir %attr(0750, %{qemu_user}, %{qemu_group}) %{_localstatedir}/cache/libvirt/qemu/
 %{_datadir}/augeas/lenses/libvirtd_qemu.aug
 %{_datadir}/augeas/lenses/tests/test_libvirtd_qemu.aug
@@ -2178,7 +2188,6 @@ exit 0
 %config(noreplace) %{_sysconfdir}/libvirt/libxl.conf
 %config(noreplace) %{_sysconfdir}/logrotate.d/libvirtd.libxl
 %config(noreplace) %{_sysconfdir}/libvirt/libxl-lockd.conf
-%config(noreplace) %{_sysconfdir}/libvirt/libxl-sanlock.conf
 %{_datadir}/augeas/lenses/libvirtd_libxl.aug
 %{_datadir}/augeas/lenses/tests/test_libvirtd_libxl.aug
 %dir %attr(0700, root, root) %{_localstatedir}/log/libvirt/libxl/
@@ -2231,6 +2240,9 @@ exit 0
     %if %{with_qemu}
 %config(noreplace) %{_sysconfdir}/libvirt/qemu-sanlock.conf
     %endif
+    %if %{with_libxl}
+%config(noreplace) %{_sysconfdir}/libvirt/libxl-sanlock.conf
+    %endif
 %attr(0755, root, root) %{_libdir}/libvirt/lock-driver/sanlock.so
 %{_datadir}/augeas/lenses/libvirt_sanlock.aug
 %{_datadir}/augeas/lenses/tests/test_libvirt_sanlock.aug
@@ -2256,6 +2268,7 @@ exit 0
 %{_libdir}/libvirt.so.*
 %{_libdir}/libvirt-qemu.so.*
 %{_libdir}/libvirt-lxc.so.*
+%{_libdir}/libvirt-admin.so.*
 
 %if %{with_dtrace}
 %{_datadir}/systemtap/tapset/libvirt_probes*.stp
@@ -2341,6 +2354,7 @@ exit 0
 %{_datadir}/libvirt/api/libvirt-qemu-api.xml
 %{_datadir}/libvirt/api/libvirt-lxc-api.xml
 
+
 %doc docs/*.html docs/html docs/*.gif
 %doc docs/libvirt-api.xml
 %doc examples/hellolibvirt
@@ -2350,9 +2364,30 @@ exit 0
 %doc examples/dommigrate
 %doc examples/openauth
 %doc examples/xml
+%doc examples/rename
 %doc examples/systemtap
 
 %changelog
+* Fri Oct  2 2015 Daniel Veillard <veillard@redhat.com> - 1.2.20-1
+- security fixes for CVE-2015-5247
+- a number of improvements and bug fixes
+
+* Wed Sep  2 2015 Daniel Veillard <veillard@redhat.com> - 1.2.19-1
+- Big improvements on ppc64 support
+- New virDomainRename API
+- Support for QEMU new pci emulations
+- a number of improvements and bug fixes
+
+* Mon Aug  3 2015 Daniel Veillard <veillard@redhat.com> - 1.2.18-1
+- libxl: support dom0
+- a number of improvements and bug fixes
+
+* Thu Jul  2 2015 Daniel Veillard <veillard@redhat.com> - 1.2.17-1
+- numerous improvements and refactoring of the parallels driver
+- hardening of vcpu code
+- hardening of migration code
+- a lot of improvement and bug fixes
+
 * Mon Jun  1 2015 Daniel Veillard <veillard@redhat.com> - 1.2.16-1
 - Introduce pci-serial
 - Introduce virDomainSetUserPassword API
