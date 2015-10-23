@@ -1568,6 +1568,7 @@ rm -f po/stamp-po
            %{?with_loader_nvram} \
            %{?enable_werror} \
            --enable-expensive-tests \
+           --without-test-suite \
            %{init_scripts}
 make %{?_smp_mflags}
 gzip -9 ChangeLog
@@ -1669,21 +1670,21 @@ rm -f $RPM_BUILD_ROOT%{_prefix}/lib/sysctl.d/60-libvirtd.conf
 rm -fr %{buildroot}
 
 %check
-cd tests
-make
-# These tests don't current work in a mock build root
-for i in nodeinfotest seclabeltest
-do
-  rm -f $i
-  printf 'int main(void) { return 0; }' > $i.c
-  printf '#!/bin/sh\nexit 0\n' > $i
-  chmod +x $i
-done
-if ! make check VIR_TEST_DEBUG=1
-then
-  cat test-suite.log || true
-  exit 1
-fi
+# cd tests
+# make
+# # These tests don't current work in a mock build root
+# for i in nodeinfotest seclabeltest
+# do
+#   rm -f $i
+#   printf 'int main(void) { return 0; }' > $i.c
+#   printf '#!/bin/sh\nexit 0\n' > $i
+#   chmod +x $i
+# done
+# if ! make check VIR_TEST_DEBUG=1
+# then
+#   cat test-suite.log || true
+#   exit 1
+# fi
 
 %if %{with_libvirtd}
 %pre daemon
